@@ -14,8 +14,13 @@ public:
 	bool Render();
 
 private:
-	ID3D11Device* pd3dDevice;
-	ID3D11DeviceContext* pImmediateContext;
-	IDXGISwapChain* pSwapChain;
-	ID3D11RenderTargetView* pRenderTargetView;
+	ID3D11Device* device;
+	ID3D11DeviceContext* context;
+	IDXGISwapChain* swapChain;
+	ID3D11RenderTargetView* renderTargetView;
+	ID3D11DepthStencilView* depthStencilView;
+	ID3D11RasterizerState* rasterState;
+	ID3D11DepthStencilState* depthStencilState;
+	ID3D11Texture2D* backBufferPtr;
+	ID3D11Texture2D* depthStencilBuffer;
 };
