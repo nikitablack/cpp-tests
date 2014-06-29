@@ -18,105 +18,11 @@ GraphicsClass::GraphicsClass(const GraphicsClass& other){
 GraphicsClass::~GraphicsClass(){
 }
 
-bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hWnd){
-	HRESULT result;
-	
-	IDXGIFactory* factory;
-	result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
-	if (FAILED(result)){
-		MessageBox(NULL, L"Error creating DXGIfactory", L"Error", MB_OK | MB_ICONERROR);
-		return false;
-	}
+bool GraphicsClass::Initialize(HWND hWnd){
+	UINT numerator{ 60 };
+	UINT denominator{ 1 };
 
-	IDXGIAdapter* adapter;
-	std::vector <IDXGIAdapter*> adapters;
-	for (UINT i = 0; factory->EnumAdapters(i, &adapter) != DXGI_ERROR_NOT_FOUND; i++){
-		DXGI_ADAPTER_DESC ad;
-		ZeroMemory(&ad, sizeof(ad));
-		adapter->GetDesc(&ad);
-		OutputDebugStringW(ad.Description);
-		OutputDebugStringW(L"\n");
-		
-		char msgbuf[256];
-		sprintf_s(msgbuf, "%d\n", ad.DedicatedVideoMemory / 1024 / 1024);
-		OutputDebugStringA(msgbuf);
-
-		adapters.push_back(adapter);
-
-		int isEqual = wcscmp(ad.Description, L"NVIDIA GeForce GT 740M         ");
-		if (isEqual == 0){
-			int a{ 5 };
-		}
-	}
-
-	UINT numerator{ 0 };
-	UINT denominator{ 0 };
-	for (IDXGIAdapter* adapter : adapters){
-		IDXGIOutput* adapterOutput;
-		result = adapter->EnumOutputs(0, &adapterOutput);
-		if (FAILED(result)){
-			continue;
-		}
-
-		UINT numModes{ 0 };
-		DXGI_MODE_DESC* displayModes{ nullptr };
-		DXGI_FORMAT format{ DXGI_FORMAT_R8G8B8A8_UNORM };
-
-		// Get the number of elements
-		result = adapterOutput->GetDisplayModeList(format, 0, &numModes, NULL);
-		if (numModes == 0 || FAILED(result)){
-			continue;
-		}
-
-		displayModes = new DXGI_MODE_DESC[numModes];
-
-		// Get the list
-		result = adapterOutput->GetDisplayModeList(format, 0, &numModes, displayModes);
-		if (FAILED(result)){
-			continue;
-		}
-
-		
-		for (int i = 0; i < numModes; i++)
-		{
-			//char msgbuf[256];
-			//sprintf_s(msgbuf, "width: %d, height: %d\n", displayModes[i].Width, displayModes[i].Height);
-			//OutputDebugStringA(msgbuf);
-			
-			if (displayModes[i].Width == (unsigned int)screenWidth)
-			{
-				if (displayModes[i].Height == (unsigned int)screenHeight)
-				{
-					numerator = displayModes[i].RefreshRate.Numerator;
-					denominator = displayModes[i].RefreshRate.Denominator;
-
-					break;
-				}
-			}
-		}
-
-		if (numerator > 0 && denominator > 0){
-			break;
-		}
-
-		delete[] displayModes;
-		displayModes = nullptr;
-
-		adapterOutput->Release();
-		adapterOutput = nullptr;
-	}
-
-	for (IDXGIAdapter* adapter : adapters){
-		// Release the adapter.
-		adapter->Release();
-		adapter = nullptr;
-	}
-
-	adapters.clear();
-
-	// Release the factory.
-	factory->Release();
-	factory = nullptr;
+	GetNumeratorAndDenominator(numerator, denominator);
 
 
 
@@ -185,7 +91,8 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hWnd){
 	D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_0 };
 	UINT numFeatureLevels = ARRAYSIZE(featureLevels);
 
-	HRESULT hr = D3D11CreateDeviceAndSwapChain(
+	HRESULT result;
+	result = D3D11CreateDeviceAndSwapChain(
 		nullptr,
 		D3D_DRIVER_TYPE_HARDWARE,
 		nullptr,
@@ -468,4 +375,100 @@ bool GraphicsClass::Render(){
 
 
 	return true;
+}
+
+void GraphicsClass::GetNumeratorAndDenominator(UINT& numerator, UINT& denominator){
+	HRESULT result;
+
+	UINT screenWidth{ (UINT)GetSystemMetrics(SM_CXSCREEN) };
+	UINT screenHeight{ (UINT)GetSystemMetrics(SM_CYSCREEN) };
+
+	IDXGIFactory* factory;
+	result = CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
+	if (FAILED(result)){
+		return;
+	}
+
+	std::vector <IDXGIAdapter*> adapters;
+	GetAdapters(adapters, factory);
+	
+	for (IDXGIAdapter* adapter : adapters){
+		IDXGIOutput* adapterOutput;
+		result = adapter->EnumOutputs(0, &adapterOutput);
+		if (FAILED(result)){
+			continue;
+		}
+
+		UINT numModes{ 0 };
+		DXGI_FORMAT format{ DXGI_FORMAT_R8G8B8A8_UNORM };
+
+		// Get the number of elements
+		result = adapterOutput->GetDisplayModeList(format, 0, &numModes, NULL);
+		if (numModes == 0 || FAILED(result)){
+			continue;
+		}
+
+		DXGI_MODE_DESC* displayModes{ new DXGI_MODE_DESC[numModes] };
+
+		// Get the list
+		result = adapterOutput->GetDisplayModeList(format, 0, &numModes, displayModes);
+		if (FAILED(result)){
+			delete[] displayModes;
+			displayModes = nullptr;
+
+			adapterOutput->Release();
+			adapterOutput = nullptr;
+
+			continue;
+		}
+
+		for (UINT i = 0; i < numModes; i++){
+			DXGI_MODE_DESC modeDesc = displayModes[i];
+			//char msgbuf[256];
+			//sprintf_s(msgbuf, "width: %d, height: %d\n", displayModes[i].Width, displayModes[i].Height);
+			//OutputDebugStringA(msgbuf);
+
+			if (modeDesc.Width == screenWidth && modeDesc.Height == screenHeight){
+				numerator = displayModes[i].RefreshRate.Numerator;
+				denominator = displayModes[i].RefreshRate.Denominator;
+
+				break;
+			}
+		}
+
+		delete[] displayModes;
+		displayModes = nullptr;
+
+		adapterOutput->Release();
+		adapterOutput = nullptr;
+
+		if (numerator > 0 && denominator > 0){
+			break;
+		}
+	}
+
+	for (IDXGIAdapter* adapter : adapters){
+		// Release the adapter.
+		adapter->Release();
+		adapter = nullptr;
+	}
+
+	adapters.clear();
+
+	// Release the factory.
+	factory->Release();
+	factory = nullptr;
+}
+
+void GraphicsClass::GetAdapters(std::vector <IDXGIAdapter*>& adapters, IDXGIFactory* factory){
+	IDXGIAdapter* adapter;
+	for (UINT i = 0; factory->EnumAdapters(i, &adapter) == S_OK; i++){
+		/*DXGI_ADAPTER_DESC adapterDesc;
+		ZeroMemory(&adapterDesc, sizeof(adapterDesc));
+		adapter->GetDesc(&adapterDesc);
+		OutputDebugStringW(adapterDesc.Description);
+		OutputDebugStringW(L"\n");*/
+
+		adapters.push_back(adapter);
+	}
 }

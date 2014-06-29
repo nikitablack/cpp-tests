@@ -1,13 +1,12 @@
 #include "SystemClass.h"
+#include "Globals.h"
 #include <stdio.h>
 
-SystemClass *SystemClass::ApplicationHandle = nullptr;
+SystemClass *SystemClass::ApplicationHandle{ nullptr };
 
 SystemClass::SystemClass(){
 	input = nullptr;
 	graphics = nullptr;
-
-	applicationName = L"Engine";
 }
 
 SystemClass::SystemClass(const SystemClass& other){
@@ -19,10 +18,7 @@ SystemClass::~SystemClass(){
 bool SystemClass::Initialize(HINSTANCE hInstance, int nCmdShow){
 	SystemClass::ApplicationHandle = this;
 
-	UINT screenWidth{ 0 };
-	UINT screenHeight{ 0 };
-
-	if (!InitWindow(hInstance, nCmdShow, screenWidth, screenHeight)){
+	if (!InitWindow(hInstance, nCmdShow)){
 		return false;
 	}
 
@@ -38,7 +34,7 @@ bool SystemClass::Initialize(HINSTANCE hInstance, int nCmdShow){
 		return false;
 	}
 
-	if (!graphics->Initialize(screenWidth, screenHeight, hWnd)){
+	if (!graphics->Initialize(hWnd)){
 		return false;
 	}
 
@@ -51,7 +47,7 @@ void SystemClass::Shutdown(){
 	hWnd = nullptr;
 
 	// Remove the application instance.
-	UnregisterClass(applicationName, hInstance);
+	UnregisterClass(APPLICATION_NAME, hInstance);
 	hInstance = nullptr;
 
 	if (input != nullptr)
@@ -84,7 +80,7 @@ void SystemClass::Run(){
 	}
 }
 
-bool SystemClass::InitWindow(HINSTANCE hInstance, int nCmdShow, UINT& screenWidth, UINT& screenHeight){
+bool SystemClass::InitWindow(HINSTANCE hInstance, int nCmdShow){
 	this->hInstance = hInstance;
 
 	WNDCLASSEX wcex;
@@ -98,7 +94,7 @@ bool SystemClass::InitWindow(HINSTANCE hInstance, int nCmdShow, UINT& screenWidt
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW);
 	wcex.lpszMenuName = nullptr;
-	wcex.lpszClassName = applicationName;
+	wcex.lpszClassName = APPLICATION_NAME;
 	wcex.hIconSm = wcex.hIcon;
 
 	DWORD dwLastError = GetLastError();
@@ -108,14 +104,10 @@ bool SystemClass::InitWindow(HINSTANCE hInstance, int nCmdShow, UINT& screenWidt
 		return false;
 	}
 
-	//SM_CMONITORS
-	screenWidth = (UINT)GetSystemMetrics(SM_CXSCREEN);
-	screenHeight = (UINT)GetSystemMetrics(SM_CYSCREEN);
-
 	// Create window
 	RECT rc = { 0, 0, 640, 480 };
 	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
-	hWnd = CreateWindow(applicationName, L"Direct3D 11", WS_OVERLAPPEDWINDOW,
+	hWnd = CreateWindow(APPLICATION_NAME, L"Direct3D 11", WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
 		nullptr);
 

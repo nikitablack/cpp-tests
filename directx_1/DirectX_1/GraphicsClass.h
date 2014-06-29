@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <vector>
 #include <d3d11.h>
+#include <memory>
 
 class GraphicsClass{
 public:
@@ -9,11 +10,14 @@ public:
 	GraphicsClass(const GraphicsClass& other);
 	~GraphicsClass();
 
-	bool Initialize(int screenWidth, int screenHeight, HWND hwnd);
+	bool Initialize(HWND hwnd);
 	void Shutdown();
 	bool Render();
 
 private:
+	void GetAdapters(std::vector <IDXGIAdapter*>& adapters, IDXGIFactory* factory);
+	void GetNumeratorAndDenominator(UINT& numerator, UINT& denominator);
+
 	ID3D11Device* device;
 	ID3D11DeviceContext* context;
 	IDXGISwapChain* swapChain;

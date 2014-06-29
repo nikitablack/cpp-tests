@@ -14,12 +14,11 @@ public:
 	void Shutdown();
 	void Run();
 private:
-	bool InitWindow(HINSTANCE hInstance, int nCmdShow, UINT& screenWidth, UINT& screenHeight);
+	bool InitWindow(HINSTANCE hInstance, int nCmdShow);
 	static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 	static SystemClass* ApplicationHandle;
 
 private:
-	LPCWSTR applicationName;
 	HWND hWnd;
 	HINSTANCE hInstance;
 
