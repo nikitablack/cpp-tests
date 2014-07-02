@@ -105,7 +105,7 @@ bool SystemClass::InitWindow(HINSTANCE hInstance, int nCmdShow){
 	}
 
 	// Create window
-	RECT rc = { 0, 0, 640, 480 };
+	RECT rc = { 0, 0, WIDTH, HEIGHT };
 	AdjustWindowRect(&rc, WS_OVERLAPPEDWINDOW, FALSE);
 	hWnd = CreateWindow(APPLICATION_NAME, L"Direct3D 11", WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top, nullptr, nullptr, hInstance,
