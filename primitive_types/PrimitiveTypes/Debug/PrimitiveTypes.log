@@ -1,17 +1,9 @@
-﻿Build started 25.06.2014 14:29:32.
+﻿Build started 30.06.2014 13:44:58.
      1>Project "C:\Users\ncherniy\Desktop\personal\github\cpp-tests\primitive_types\PrimitiveTypes\PrimitiveTypes.vcxproj" on node 2 (Build target(s)).
-     1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Za /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt Main.cpp
-         Main.cpp
-     1>c:\users\ncherniy\desktop\personal\github\cpp-tests\primitive_types\primitivetypes\main.cpp(138): warning C4215: nonstandard extension used : long float
-     1>c:\users\ncherniy\desktop\personal\github\cpp-tests\primitive_types\primitivetypes\main.cpp(141): warning C4215: nonstandard extension used : long float
-     1>c:\users\ncherniy\desktop\personal\github\cpp-tests\primitive_types\primitivetypes\main.cpp(143): warning C4215: nonstandard extension used : long float
-     1>c:\users\ncherniy\desktop\personal\github\cpp-tests\primitive_types\primitivetypes\main.cpp(144): warning C4215: nonstandard extension used : long float
-       Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\ncherniy\Desktop\personal\github\cpp-tests\primitive_types\PrimitiveTypes\Debug\PrimitiveTypes.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\ncherniy\Desktop\personal\github\cpp-tests\primitive_types\PrimitiveTypes\Debug\PrimitiveTypes.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\ncherniy\Desktop\personal\github\cpp-tests\primitive_types\PrimitiveTypes\Debug\PrimitiveTypes.lib" /MACHINE:X86 Debug\Main.obj
+     1>Link:
          PrimitiveTypes.vcxproj -> C:\Users\ncherniy\Desktop\personal\github\cpp-tests\primitive_types\PrimitiveTypes\Debug\PrimitiveTypes.exe
      1>Done Building Project "C:\Users\ncherniy\Desktop\personal\github\cpp-tests\primitive_types\PrimitiveTypes\PrimitiveTypes.vcxproj" (Build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:00.57
+Time Elapsed 00:00:00.13
