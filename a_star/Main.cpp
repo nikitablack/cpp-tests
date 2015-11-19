@@ -22,10 +22,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	NodePtrVector nodes;
+	std::vector<Node> nodes;
 	try
 	{
-		nodes = readMapFile(config.mapFileName);
+		nodes = readMapFile(config.mapFileName, MAP_SIZE_X, MAP_SIZE_Y);
 	}
 	catch (runtime_error err)
 	{
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	AStar aStar{ nodes, MAP_SIZE_X, MAP_SIZE_Y };
 
 	auto start = chrono::high_resolution_clock::now();
-	NodePtrVector path{ aStar.find(config.startX, config.startY, config.endX, config.endY) };
+	std::vector<Node> path{ aStar.find(config.startX, config.startY, config.endX, config.endY) };
 	auto duration = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now() - start);
 
 	cout << "Start position: (" << config.startX << ", " << config.startY << ")" << endl;
@@ -53,9 +53,9 @@ int main(int argc, char *argv[])
 		int num{ 0 };
 		for (auto& node : nodes)
 		{
-			auto it = find_if(path.begin(), path.end(), [&node](const NodePtr n)
+			auto it = find_if(path.begin(), path.end(), [&node](const Node n)
 			{
-				return n->xPos == node->xPos && n->yPos == node->yPos;
+				return n.xPos == node.xPos && n.yPos == node.yPos;
 			});
 
 			if (it != path.end())
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				cout << (node->block ? '*' : '.');
+				cout << (node.block ? '*' : '.');
 			}
 
 			++num;

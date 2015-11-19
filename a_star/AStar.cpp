@@ -1,28 +1,25 @@
 #include "AStar.h"
 #include <fstream>
 #include <stdexcept>
-#include <cstdlib>
 #include <algorithm>
-#include <limits>
-#include "Config.h"
 
 using namespace astar;
 using namespace std;
 
-NodePtrVector astar::readMapFile(string mapFilePath)
+vector<Node> astar::readMapFile(string mapFilePath, int sizeW, int sizeH)
 {
 	ifstream inFile(mapFilePath);
-	
+
 	if (!inFile.is_open())
 	{
 		throw(runtime_error{ "Can't read " + mapFilePath + " file" });
 	}
 
-	NodePtrVector nodes;
+	vector<Node> nodes;
 
-	for (int i{ 0 }; i < MAP_SIZE_X; ++i)
+	for (int i{ 0 }; i < sizeW; ++i)
 	{
-		for (int j{ 0 }; j < MAP_SIZE_Y; ++j)
+		for (int j{ 0 }; j < sizeH; ++j)
 		{
 			char c;
 			inFile >> c;
@@ -37,64 +34,70 @@ NodePtrVector astar::readMapFile(string mapFilePath)
 				throw(runtime_error{ "Unsupported symbol " + string{ c } +" at row " + to_string(i) + ", column " + to_string(j) });
 			}
 
-			nodes.emplace_back(make_shared<Node>(Node{ j, i, (c == '*') }));
+			nodes.push_back(Node{ j, i, (c == '*') });
 		}
 	}
 
 	return nodes;
 }
 
-astar::AStar::AStar(NodePtrVector nodes, int sizeW, int sizeH) : allNodes{ nodes }, SIZE_W{ sizeW }, SIZE_H{ sizeH }
+AStar::AStar(vector<Node>& InNodes, int sizeW, int sizeH) : SIZE_W{ sizeW }, SIZE_H{ sizeH }
 {
-	if (allNodes.size() < SIZE_W * SIZE_H)
+	for (const Node& node : InNodes)
 	{
-		throw runtime_error{ "Wrong array size" };
+		nodes.push_back(NodeInternal{ node, nullptr, 0, 0, false, false });
 	}
 }
 
-const auto astar::AStar::getNodeIterator(const NodePtr node, const NodePtrVector& list) const
+vector<Node> AStar::find(int startX, int startY, int endX, int endY)
 {
-	const auto it = find_if(list.begin(), list.end(), [&node](const NodePtr n)
-	{
-		return n->xPos == node->xPos && n->yPos == node->yPos;
-	});
-
-	return it;
-}
-
-NodePtrVector astar::AStar::find(int startX, int startY, int endX, int endY)
-{
-	// reset to default - ugly
-	for (auto& n : allNodes)
-	{
-		n->g = 0;
-		n->h = 0;
-		n->parent = nullptr;
-	}
-
-	opened.clear();
-	closed.clear();
-
-	NodePtr startNode{ getNodeByPosition(startX, startY) };
-
 	if (startX == endX && startY == endY)
 	{
-		return { startNode };
+		return{};
 	}
 
-	NodePtr endNode;
-	NodePtr node{ startNode };
+	// prepare the internal data
+	opened.clear();
+	for (NodeInternal& n : nodes)
+	{
+		n.g = 0;
+		n.h = 0;
+		n.opened = false;
+		n.closed = false;
+		n.parent = nullptr;
+	}
+
+	NodeInternal* startNode{ getNodeByPosition(startX, startY) };
+	if (startNode->node.block)
+	{
+		return{};
+	}
+
+	NodeInternal* endNode{ getNodeByPosition(endX, endY) };
+	if (endNode->node.block)
+	{
+		return{};
+	}
+
+	NodeInternal* node{ startNode };
+	opened.push_back(node);
+
 	while (true)
 	{
-		const auto it = getNodeIterator(node, opened);
-
-		if (it != opened.end())
+		// Search a node with a lowest f. Usually opened list is not big and traversing it will be fast
+		auto it = min_element(opened.begin(), opened.end(), [](const NodeInternal* a, const NodeInternal* b)
 		{
-			opened.erase(it);
-		}
+			return a->g + a->h < b->g + b->h;
+		});
 
-		closed.push_back(node);
+		// remove a node from opened list and mark it as closed
+		iter_swap(it, opened.end() - 1);
+		node = opened.back();
+		opened.pop_back();
 
+		node->closed = true;
+
+		// if endNode is not null we found a path!
 		endNode = updateNeighbors(node, endX, endY);
 
 		if (endNode != nullptr)
@@ -103,39 +106,22 @@ NodePtrVector astar::AStar::find(int startX, int startY, int endX, int endY)
 		}
 		else
 		{
-			if (opened.size() > 0)
-			{
-				// get node with lowest g
-				int currG{ numeric_limits<int>::max() };
-				int currInd{ 0 };
-				int ind{ 0 };
-				for (auto n : opened)
-				{
-					if (n->g < currG)
-					{
-						node = n;
-						currG = n->g;
-						ind = currInd;
-					}
-
-					++currInd;
-				}
-				opened.erase(opened.begin() + ind);
-			}
-			else
+			// if we didn't find endNode and the opened list is empty - the path does not exist
+			if (opened.empty())
 			{
 				break;
 			}
 		}
 	}
 
-	NodePtrVector result;
+	// collecting a path nodes
+	vector<Node> result;
 	if (endNode != nullptr)
 	{
-		NodePtr n{ endNode };
+		NodeInternal* n{ endNode };
 		while (n != nullptr)
 		{
-			result.push_back(n);
+			result.push_back(n->node);
 
 			n = n->parent;
 		}
@@ -146,31 +132,25 @@ NodePtrVector astar::AStar::find(int startX, int startY, int endX, int endY)
 	return result;
 }
 
-bool astar::AStar::isInList(const NodePtr node, const NodePtrVector& list) const
+AStar::NodeInternal* AStar::updateNeighbors(NodeInternal* parent, int endX, int endY)
 {
-	return getNodeIterator(node, list) != list.end();
-}
-
-NodePtr astar::AStar::updateNeighbors(NodePtr parent, int endX, int endY)
-{
-	// check if a node have neighbors on the sides
-	bool haveLeft{ parent->xPos > 0 };
-	bool haveRight{ parent->xPos < SIZE_W - 1 };
-	bool haveTop{ parent->yPos > 0 };
-	bool haveBottom{ parent->yPos < SIZE_H - 1 };
+	bool haveLeft{ parent->node.xPos > 0 };
+	bool haveRight{ parent->node.xPos < SIZE_W - 1 };
+	bool haveTop{ parent->node.yPos > 0 };
+	bool haveBottom{ parent->node.yPos < SIZE_H - 1 };
 
 	if (haveLeft)
 	{
-		NodePtr child{ getNodeByPosition(parent->xPos - 1, parent->yPos) }; // left
-		if (!child->block)
+		NodeInternal* child{ getNodeByPosition(parent->node.xPos - 1, parent->node.yPos) }; // left
+		if (!child->node.block && !child->closed)
 		{
 			if (updateNeighbor(parent, child, endX, endY)) return child;
 		}
 
 		if (haveTop)
 		{
-			NodePtr child{ getNodeByPosition(parent->xPos - 1, parent->yPos - 1) }; // top left
-			if (!child->block)
+			NodeInternal* child{ getNodeByPosition(parent->node.xPos - 1, parent->node.yPos - 1) }; // top left
+			if (!child->node.block && !child->closed)
 			{
 				if (updateNeighbor(parent, child, endX, endY)) return child;
 			}
@@ -178,8 +158,8 @@ NodePtr astar::AStar::updateNeighbors(NodePtr parent, int endX, int endY)
 
 		if (haveBottom)
 		{
-			NodePtr child{ getNodeByPosition(parent->xPos - 1, parent->yPos + 1) }; // bottom left
-			if (!child->block)
+			NodeInternal* child{ getNodeByPosition(parent->node.xPos - 1, parent->node.yPos + 1) }; // bottom left
+			if (!child->node.block && !child->closed)
 			{
 				if (updateNeighbor(parent, child, endX, endY)) return child;
 			}
@@ -188,16 +168,16 @@ NodePtr astar::AStar::updateNeighbors(NodePtr parent, int endX, int endY)
 
 	if (haveRight)
 	{
-		NodePtr child{ getNodeByPosition(parent->xPos + 1, parent->yPos) }; // right
-		if (!child->block)
+		NodeInternal* child{ getNodeByPosition(parent->node.xPos + 1, parent->node.yPos) }; // right
+		if (!child->node.block && !child->closed)
 		{
 			if (updateNeighbor(parent, child, endX, endY)) return child;
 		}
 
 		if (haveTop)
 		{
-			NodePtr child{ getNodeByPosition(parent->xPos + 1, parent->yPos - 1) }; // top right
-			if (!child->block)
+			NodeInternal* child{ getNodeByPosition(parent->node.xPos + 1, parent->node.yPos - 1) }; // top right
+			if (!child->node.block && !child->closed)
 			{
 				if (updateNeighbor(parent, child, endX, endY)) return child;
 			}
@@ -205,8 +185,8 @@ NodePtr astar::AStar::updateNeighbors(NodePtr parent, int endX, int endY)
 
 		if (haveBottom)
 		{
-			NodePtr child{ getNodeByPosition(parent->xPos + 1, parent->yPos + 1) }; // bottom right
-			if (!child->block)
+			NodeInternal* child{ getNodeByPosition(parent->node.xPos + 1, parent->node.yPos + 1) }; // bottom right
+			if (!child->node.block && !child->closed)
 			{
 				if (updateNeighbor(parent, child, endX, endY)) return child;
 			}
@@ -215,8 +195,8 @@ NodePtr astar::AStar::updateNeighbors(NodePtr parent, int endX, int endY)
 
 	if (haveTop)
 	{
-		NodePtr child{ getNodeByPosition(parent->xPos, parent->yPos - 1) }; // top
-		if (!child->block)
+		NodeInternal* child{ getNodeByPosition(parent->node.xPos, parent->node.yPos - 1) }; // top
+		if (!child->node.block && !child->closed)
 		{
 			if (updateNeighbor(parent, child, endX, endY)) return child;
 		}
@@ -224,8 +204,8 @@ NodePtr astar::AStar::updateNeighbors(NodePtr parent, int endX, int endY)
 
 	if (haveBottom)
 	{
-		NodePtr child{ getNodeByPosition(parent->xPos, parent->yPos + 1) }; // bottom
-		if (!child->block)
+		NodeInternal* child{ getNodeByPosition(parent->node.xPos, parent->node.yPos + 1) }; // bottom
+		if (!child->node.block && !child->closed)
 		{
 			if (updateNeighbor(parent, child, endX, endY)) return child;
 		}
@@ -234,29 +214,24 @@ NodePtr astar::AStar::updateNeighbors(NodePtr parent, int endX, int endY)
 	return nullptr;
 }
 
-bool astar::AStar::updateNeighbor(NodePtr parent, NodePtr child, int endX, int endY)
+bool AStar::updateNeighbor(NodeInternal* parent, NodeInternal* child, int endX, int endY)
 {
-	// if a node is in a closed list - do nothing
-	if (isInList(child, closed))
-	{
-		return false;
-	}
-
 	// move cost from the start
-	int g{ parent->g + getG(parent, child) };
+	int g{ parent->g + calculateG(parent, child) };
 
-	if (!isInList(child, opened))
+	if (!child->opened)
 	{
-		child->h = getH(child, endX, endY); // heuristic move cost to the end
-		child->g = g;
-
 		child->parent = parent;
 
-		if (child->xPos == endX && child->yPos == endY)
+		if (child->node.xPos == endX && child->node.yPos == endY)
 		{
 			return true;
 		}
 
+		child->h = calculateH(child, endX, endY);
+		child->g = g;
+
+		child->opened = true;
 		opened.push_back(child);
 	}
 	else
@@ -270,12 +245,12 @@ bool astar::AStar::updateNeighbor(NodePtr parent, NodePtr child, int endX, int e
 	}
 
 	return false;
-}
+};
 
-int astar::AStar::getG(const NodePtr parent, const NodePtr child) const
+int AStar::calculateG(const NodeInternal* parent, const NodeInternal* child) const
 {
 	// if diagonal
-	if (parent->xPos != child->xPos && parent->yPos != child->yPos)
+	if (parent->node.xPos != child->node.xPos && parent->node.yPos != child->node.yPos)
 	{
 		return 14;
 	}
@@ -283,12 +258,17 @@ int astar::AStar::getG(const NodePtr parent, const NodePtr child) const
 	return 10;
 }
 
-int astar::AStar::getH(const NodePtr node, const int endX, const int endY) const
+int AStar::calculateH(const NodeInternal* node, const int endX, const int endY) const
 {
-	return 10 * (abs(endX - node->xPos) + abs(endY - node->yPos));
+	return 10 * (abs(endX - node->node.xPos) + abs(endY - node->node.yPos));
 }
 
-NodePtr astar::AStar::getNodeByPosition(const int posX, const int posY)
+AStar::NodeInternal* AStar::getNodeByPosition(const int posX, const int posY)
 {
-	return allNodes[posY * SIZE_W + posX];
+	return &nodes[posY * SIZE_W + posX];
+}
+
+int AStar::getNodeIndex(const NodeInternal* node) const
+{
+	return node->node.yPos * SIZE_W + node->node.xPos;
 }
