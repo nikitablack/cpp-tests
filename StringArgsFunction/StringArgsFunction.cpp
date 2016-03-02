@@ -51,10 +51,6 @@ public:
 	}
 
 private:
-	// TODO (ncherniy) replace with std::integer_sequence in c++14
-	// https://ngathanasiou.wordpress.com/2015/02/19/compile-time-integer-sequences/
-	////////////////////////////////////////////////////////////////////////////////
-
 	template <std::size_t... Idx>
 	void callHelper(const std::vector<std::string>& strArgs, std::index_sequence<Idx...>)
 	{
