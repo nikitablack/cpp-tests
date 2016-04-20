@@ -1,1 +1,0 @@
-#include "DirectXTemplatePCH.h"
