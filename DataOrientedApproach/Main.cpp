@@ -1,4 +1,4 @@
-#include "ShapesDemoDX11.h"
+#include "ShapesOOP.h"
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
@@ -12,11 +12,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	const LONG height{ 600 };
 	const UINT bufferCount{ 3 };
 
-	shared_ptr<ShapesDemo> shapesDemo;
+	shared_ptr<ShapesOOP> shapesDemo;
 
 	try
 	{
-		shapesDemo = make_shared<ShapesDemo>(bufferCount, "Data Is Everything!", width, height);
+		shapesDemo = make_shared<ShapesOOP>(1);
 	}
 	catch (runtime_error& err)
 	{
@@ -34,7 +34,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			try
 			{
-				shapesDemo->render();
+				shapesDemo->update(1.0f);
 			}
 			catch (runtime_error& err)
 			{

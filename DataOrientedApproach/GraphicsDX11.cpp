@@ -1,26 +1,25 @@
-#include "Graphics.h"
+#include "GraphicsDX11.h"
 #include <stdexcept>
 #include "Window.h"
 
 using namespace std;
 using namespace Microsoft::WRL;
 
-Graphics::Graphics(UINT bufferCount, string name, LONG width, LONG height) : bufferCount{ bufferCount }
+GraphicsDX11::GraphicsDX11(UINT bufferCount, string name, LONG width, LONG height) : bufferCount{ bufferCount }
 {
 	createWindow(name, width, height);
 	createFactory();
 	createDeviceAndContext();
 	createSwapChain();
 	createRenderTargetViews();
-	createDepthStencilAndView();
 }
 
-void Graphics::createWindow(string name, LONG width, LONG height)
+void GraphicsDX11::createWindow(string name, LONG width, LONG height)
 {
 	window = make_shared<Window>(width, height, name.c_str());
 }
 
-void Graphics::createFactory()
+void GraphicsDX11::createFactory()
 {
 	if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(factory.ReleaseAndGetAddressOf()))))
 	{
@@ -28,7 +27,7 @@ void Graphics::createFactory()
 	}
 }
 
-void Graphics::createDeviceAndContext()
+void GraphicsDX11::createDeviceAndContext()
 {
 	UINT flags{ D3D11_CREATE_DEVICE_BGRA_SUPPORT };
 #if defined(_DEBUG)
@@ -43,7 +42,7 @@ void Graphics::createDeviceAndContext()
 	}
 }
 
-void Graphics::createSwapChain()
+void GraphicsDX11::createSwapChain()
 {
 	POINT wSize(window->getSize());
 
@@ -64,7 +63,7 @@ void Graphics::createSwapChain()
 	}
 }
 
-void Graphics::createRenderTargetViews()
+void GraphicsDX11::createRenderTargetViews()
 {
 	for (UINT i{ 0 }; i < bufferCount; ++i)
 	{
@@ -83,69 +82,3 @@ void Graphics::createRenderTargetViews()
 		renderTargetViews.push_back(renderTargetView);
 	}
 }
-
-void Graphics::createDepthStencilAndView()
-{
-	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-	swapChain->GetDesc(&swapChainDesc);
-
-	D3D11_TEXTURE2D_DESC desc;
-	ZeroMemory(&desc, sizeof(desc));
-	desc.Width = swapChainDesc.BufferDesc.Width;
-	desc.Height = swapChainDesc.BufferDesc.Height;
-	desc.MipLevels = 1;
-	desc.ArraySize = 1;
-	desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	desc.SampleDesc = swapChainDesc.SampleDesc;
-	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	desc.CPUAccessFlags = 0;
-	desc.MiscFlags = 0;
-
-	if (FAILED(device->CreateTexture2D(&desc, NULL, depthStencil.ReleaseAndGetAddressOf())))
-	{
-		throw(runtime_error{ "Error creating depth stencil texture." });
-	}
-
-	D3D11_DEPTH_STENCIL_VIEW_DESC viewDesc;
-	ZeroMemory(&viewDesc, sizeof(viewDesc));
-	viewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	viewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	viewDesc.Texture2D.MipSlice = 0;
-	viewDesc.Flags = 0;
-
-	if (FAILED(device->CreateDepthStencilView(depthStencil.Get(), &viewDesc, depthStencilView.ReleaseAndGetAddressOf())))
-	{
-		throw(runtime_error{ "Error creating depth stencil view." });
-	}
-}
-
-/*ID3D11Device* Graphics::getDevice()
-{
-	return device.Get();
-}
-
-ComPtr<ID3D11Device> Graphics::getDeviceCom()
-{
-	return device;
-}
-
-ID3D11DeviceContext* Graphics::getContext()
-{
-	return context.Get();
-}
-
-IDXGISwapChain* Graphics::getSwapChain()
-{
-	return swapChain.Get();
-}
-
-ID3D11RenderTargetView* Graphics::getRenderTargetView(uint32_t ind)
-{
-	return renderTargetViews[ind].Get();
-}
-
-ID3D11DepthStencilView* Graphics::getDepthStencilView()
-{
-	return depthStencilView.Get();
-}*/
