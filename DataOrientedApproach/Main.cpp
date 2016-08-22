@@ -1,4 +1,5 @@
 #include "ShapesOOP.h"
+#include <chrono>
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
@@ -16,7 +17,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	try
 	{
-		shapesDemo = make_shared<ShapesOOP>(1);
+		shapesDemo = make_shared<ShapesOOP>(10);
 	}
 	catch (runtime_error& err)
 	{
@@ -27,6 +28,8 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));
 
+	float dt{ 0.0f };
+
 	while (msg.message != WM_QUIT)
 	{
 		BOOL r{ PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) };
@@ -34,7 +37,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 		{
 			try
 			{
-				shapesDemo->update(1.0f);
+				auto start = chrono::high_resolution_clock::now();
+				shapesDemo->update(dt);
+				auto end = chrono::high_resolution_clock::now();
+				auto time = chrono::duration_cast<chrono::milliseconds>(end - start);
+				dt = time.count() / 1000.0f;
 			}
 			catch (runtime_error& err)
 			{

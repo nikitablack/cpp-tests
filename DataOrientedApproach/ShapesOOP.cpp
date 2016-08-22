@@ -1,16 +1,29 @@
 #include "ShapesOOP.h"
 #include "Shape.h"
+#include <random>
 
 using namespace std;
 
 ShapesOOP::ShapesOOP(uint32_t numShapes)
 {
+	random_device r;
+	default_random_engine engine(r());
+	uniform_int_distribution<uint32_t> numVerticesDistr(3, 6);
+	uniform_real_distribution<float> radiusDistr(10.0f, 30.0f);
+	uniform_real_distribution<float> velDistrX(-50.0f, 50.0f);
+	uniform_real_distribution<float> velDistrY(-50.0f, 50.0f);
+	uniform_real_distribution<float> posDistrX(20.0f, 780.0f);
+	uniform_real_distribution<float> posDistrY(20.0f, 580.0f);
+	uniform_real_distribution<float> massDistr(1.0f, 5.0f);
+	uniform_int_distribution<uint32_t> colorDistr(0, 0xffffffff);
+
 	uint32_t numTriangles{ 0 };
 	for (uint32_t i{ 0 }; i < numShapes; ++i)
 	{
-		shapes.push_back(new Shape{ 4, 50.0f, 0x0000AA00 });
-		shapes[0]->position = { 100.0f, 100.0f };
-		numTriangles += 4;
+		uint32_t numVertices{ numVerticesDistr(engine) };
+
+		shapes.push_back(new Shape{ numVertices, radiusDistr(engine), { posDistrX(engine), posDistrY(engine) }, { velDistrX(engine), velDistrY(engine) }, massDistr(engine), colorDistr(engine) });
+		numTriangles += numVertices;
 	}
 
 	uint32_t numVertices{ numTriangles * 3 };
@@ -21,10 +34,10 @@ ShapesOOP::ShapesOOP(uint32_t numShapes)
 
 void ShapesOOP::addShapes(uint32_t numToAdd)
 {
-	for (uint32_t i{ 0 }; i < numToAdd; ++i)
+	/*for (uint32_t i{ 0 }; i < numToAdd; ++i)
 	{
 		shapes.push_back(new Shape{ 4, 1.0f, 0x0000AA00 });
-	}
+	}*/
 }
 
 const vector<Shape*>& ShapesOOP::getShapes()
@@ -34,9 +47,20 @@ const vector<Shape*>& ShapesOOP::getShapes()
 
 void ShapesOOP::update(float dt)
 {
+	updatePositions(dt);
 	fillShaderData();
 	renderer.setVertices(shaderData);
-	renderer.render();
+	renderer.render(shaderData.size() / 5);
+}
+
+void ShapesOOP::updatePositions(float dt)
+{
+	for (uint32_t i{ 0 }; i < shapes.size(); ++i)
+	{
+		Shape* shape{ shapes[i] };
+
+		shape->position += (shape->velocity * dt);
+	}
 }
 
 void ShapesOOP::fillShaderData()

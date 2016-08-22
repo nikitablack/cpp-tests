@@ -19,5 +19,6 @@ private:
 	ShapesDX11 renderer{ 3, "Shapes OOP", 800, 600 };
 
 private:
+	void updatePositions(float dt);
 	void fillShaderData();
 };

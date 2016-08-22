@@ -17,6 +17,23 @@ struct Vec2
 	float y;
 
 	Vec2(float x, float y) : x{ x }, y{ y } {}
+
+	Vec2 operator+(Vec2 other)
+	{
+		return{ x + other.x, y + other.y };
+	}
+
+	Vec2& operator+=(Vec2 other)
+	{
+		x += other.x;
+		y += other.y;
+		return *this;
+	}
+
+	Vec2 operator*(float s)
+	{
+		return{ x * s, y * s };
+	}
 };
 
 struct ShapeShaderData
@@ -36,7 +53,7 @@ struct Shape
 	uint32_t color;
 	std::vector<Vec2> vertices;
 
-	Shape(uint32_t numVertices, float radius, uint32_t color) : color{ color }
+	Shape(uint32_t numVertices, float radius, Vec2 pos, Vec2 vel, float mass, uint32_t col) : position{ pos }, velocity{ vel }, massInverse{ 1 / mass }, color { col }
 	{
 		assert(numVertices > 2);
 		assert(radius > 0.0f);

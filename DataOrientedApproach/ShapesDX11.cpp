@@ -1,6 +1,7 @@
 #include "ShapesDX11.h"
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
+#include "Shape.h"
 
 using namespace std;
 using namespace Microsoft::WRL;
@@ -21,10 +22,15 @@ ShapesDX11::ShapesDX11(UINT bufferCount, string name, LONG width, LONG height) :
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 
-
+	context->IASetInputLayout(inputLayout.Get());
+	context->VSSetShader(vertexShader.Get(), nullptr, 0);
+	context->PSSetShader(pixelShader.Get(), nullptr, 0);
+	context->RSSetViewports(1, &viewport);
+	context->RSSetState(rasterizerState.Get());
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-void ShapesDX11::render()
+void ShapesDX11::render(UINT numVertices)
 {
 	UINT presentCount;
 	swapChain->GetLastPresentCount(&presentCount);
@@ -33,22 +39,16 @@ void ShapesDX11::render()
 	ID3D11RenderTargetView* currRtv{ renderTargetViews[presentCount % bufferCount].Get() };
 	context->OMSetRenderTargets(1, &currRtv, nullptr);
 	context->ClearRenderTargetView(currRtv, clearColor);
-	context->IASetInputLayout(inputLayout.Get());
-	context->VSSetShader(vertexShader.Get(), nullptr, 0);
-	context->PSSetShader(pixelShader.Get(), nullptr, 0);
-	context->RSSetViewports(1, &viewport);
-	context->RSSetState(rasterizerState.Get());
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	context->Draw(12, 0);
+	context->Draw(numVertices, 0);
 	swapChain->Present(0, 0);
 }
 
-void ShapesDX11::createVertexBuffer(UINT size)
+void ShapesDX11::createVertexBuffer(UINT vertexBufferSize)
 {
 	D3D11_BUFFER_DESC desc;
 	ZeroMemory(&desc, sizeof(desc));
 	desc.Usage = D3D11_USAGE_DYNAMIC;
-	desc.ByteWidth = size;
+	desc.ByteWidth = vertexBufferSize;
 	desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	desc.MiscFlags = 0;
@@ -59,7 +59,7 @@ void ShapesDX11::createVertexBuffer(UINT size)
 		throw(runtime_error{ "Error creating vertex buffer." });
 	}
 
-	UINT stride{ 5 * sizeof(float) };
+	UINT stride{ sizeof(ShapeShaderData) };
 	UINT offset{ 0 };
 	context->IASetVertexBuffers(0, 1, vertexBuffer.GetAddressOf(), &stride, &offset);
 }
@@ -91,11 +91,6 @@ void ShapesDX11::createConstantBuffer()
 	XMFLOAT4X4 matrixProjection;
 	XMMATRIX matrixProjectionDX(XMMatrixOrthographicOffCenterLH(0.0f, 800.0f, 600.0f, 0.0f, 0.0f, 1.0f));
 	XMStoreFloat4x4(&matrixProjection, matrixProjectionDX);
-
-	/*XMFLOAT4 v0{ 100.0f, 100.0f, 0.0f, 1.0f };
-	XMVECTOR v0DX(XMLoadFloat4(&v0));
-	XMFLOAT4 result;
-	XMStoreFloat4(&result, XMVector4Transform(v0DX, matrixProjectionDX));*/
 
 	D3D11_SUBRESOURCE_DATA initialData;
 	initialData.pSysMem = &matrixProjection;
