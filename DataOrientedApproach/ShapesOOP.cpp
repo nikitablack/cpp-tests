@@ -50,7 +50,7 @@ void ShapesOOP::update(float dt)
 	updatePositions(dt);
 	fillShaderData();
 	renderer.setVertices(shaderData);
-	renderer.render(shaderData.size() / 5);
+	renderer.render(static_cast<UINT>(shaderData.size() / 5));
 }
 
 void ShapesOOP::updatePositions(float dt)
