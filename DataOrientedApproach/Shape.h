@@ -18,6 +18,19 @@ struct Vec2
 
 	Vec2(float x, float y) : x{ x }, y{ y } {}
 
+	Vec2 normalize()
+	{
+		float len{ std::sqrt(x * x + y * y) };
+		float oneOverLen{ 1 / len };
+		return{x * oneOverLen , y * oneOverLen };
+	}
+
+	Vec2 getNormal()
+	{
+		Vec2 n{ normalize() };
+		return{ n.y, -n.x };
+	}
+
 	Vec2 operator+(Vec2 other)
 	{
 		return{ x + other.x, y + other.y };
