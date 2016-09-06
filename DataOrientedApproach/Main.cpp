@@ -17,7 +17,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 	try
 	{
-		shapesDemo = make_shared<ShapesOOP>(10);
+		shapesDemo = make_shared<ShapesOOP>(100);
 	}
 	catch (runtime_error& err)
 	{
