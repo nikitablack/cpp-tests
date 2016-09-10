@@ -12,6 +12,7 @@ class GraphicsDX11
 {
 public:
 	GraphicsDX11(UINT bufferCount, std::string name, LONG width, LONG height);
+	std::shared_ptr<class Window> getWindow();
 
 protected:
 	void createWindow(std::string name, LONG width, LONG height);

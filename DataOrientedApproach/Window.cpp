@@ -76,8 +76,23 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_KEYDOWN:
+		if (window->onKeyPress != nullptr)
+			(*window->onKeyPress)(wParam);
+
+		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
+}
+
+void Window::addKeyPressCallback(shared_ptr<function<void(WPARAM)>> onKeyPress)
+{
+	this->onKeyPress = onKeyPress;
+}
+
+void Window::setTitle(const string & str)
+{
+	SetWindowText(hWnd, str.data());
 }

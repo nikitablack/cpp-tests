@@ -14,6 +14,11 @@ GraphicsDX11::GraphicsDX11(UINT bufferCount, string name, LONG width, LONG heigh
 	createRenderTargetViews();
 }
 
+shared_ptr<Window> GraphicsDX11::getWindow()
+{
+	return window;
+}
+
 void GraphicsDX11::createWindow(string name, LONG width, LONG height)
 {
 	window = make_shared<Window>(width, height, name.c_str());

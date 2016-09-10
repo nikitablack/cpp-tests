@@ -1,11 +1,47 @@
+#include <chrono>
+#include <numeric>
 #include "ShapesOOP.h"
 #include "Wall.h"
 #include "Math.h"
+#include "Window.h"
+#include "CollisionSolver.h"
 
 using namespace std;
 using namespace math;
 
-ShapesOOP::ShapesOOP(uint32_t numShapes)
+namespace
+{
+	int NUM_TIME_SAMPLES{ 16 };
+}
+
+ShapesOOP::ShapesOOP(uint32_t numShapes) : timeSamples(NUM_TIME_SAMPLES)
+{
+	// walls
+	shapes.push_back(make_shared<Wall>(10.0f, 600.0f, Vec2{ 0.0f, 0.0f }));
+	shapes.push_back(make_shared<Wall>(800.0f, 10.0f, Vec2{ 0.0f, 0.0f }));
+	shapes.push_back(make_shared<Wall>(10.0f, 600.0f, Vec2{ 790.0f, 0.0f }));
+	shapes.push_back(make_shared<Wall>(800.0f, 10.0f, Vec2{ 0.0f, 590.0f }));
+
+	numVertices += 16 * 3;
+
+	addShapes(numShapes);
+
+	auto lambda = [this](WPARAM wParam)
+	{
+		switch (wParam)
+		{
+		case 107:
+			addShapes(50);
+			break;
+		case 109:
+			break;
+		}
+	};
+	shared_ptr<function<void(WPARAM)>> onKeyPress{ make_shared<function<void(WPARAM)>>(lambda) };
+	renderer.getWindow()->addKeyPressCallback(onKeyPress);
+}
+
+void ShapesOOP::addShapes(uint32_t numShapes)
 {
 	uint32_t numTriangles{ 0 };
 	for (uint32_t i{ 0 }; i < numShapes; ++i)
@@ -18,59 +54,54 @@ ShapesOOP::ShapesOOP(uint32_t numShapes)
 		Color col{ randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f) };*/
 
 		uint32_t numVertices{ static_cast<uint32_t>(randRange(3, 6)) };
-		float radius{ randRange(10.0f, 30.0f) };
+		float radius{ randRange(5.0f, 10.0f) };
 		Vec2 pos{ randRange(40.0f, 760.0f), randRange(40.0f, 560.0f) };
-		Vec2 vel{ randRange(-500.0f, 500.0f), randRange(-500.0f, 500.0f) };
+		Vec2 vel{ randRange(-50.0f, 50.0f), randRange(-50.0f, 50.0f) };
 		float mass{ randRange(1.0f, 5.0f) };
 		Color col{ randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f) };
-		
-		shapes.push_back(new Shape{ numVertices, radius, pos, vel, mass, col });
+
+		shapes.push_back(make_shared<Shape>(numVertices, radius, pos, vel, mass, col));
 
 		numTriangles += numVertices;
 	}
 
-	uint32_t numVertices{ numTriangles * 3 };
-
-	shapes.push_back(new Wall{ 10.0f, 600.0f,{ 0.0f, 0.0f } });
-	shapes.push_back(new Wall{ 800.0f, 10.0f, {0.0f, 0.0f} });
-	shapes.push_back(new Wall{ 10.0f, 600.0f,{ 790.0f, 0.0f } });
-	shapes.push_back(new Wall{ 800.0f, 10.0f,{ 0.0f, 590.0f } });
-
-	numVertices += 4 * 3;
-	numVertices += 4 * 3;
-	numVertices += 4 * 3;
-	numVertices += 4 * 3;
+	numVertices += numTriangles * 3;
 
 	renderer.createVertexBuffer(static_cast<UINT>(numVertices * sizeof(ShapeShaderData)));
 	shaderData.reserve(numVertices * 5);
-
-	//shapes[0]->checkCollision(shapes[1]);
 }
 
-void ShapesOOP::addShapes(uint32_t numToAdd)
-{
-	/*for (uint32_t i{ 0 }; i < numToAdd; ++i)
-	{
-		shapes.push_back(new Shape{ 4, 1.0f, 0x0000AA00 });
-	}*/
-}
-
-const vector<Shape*>& ShapesOOP::getShapes()
+const vector<shared_ptr<class Shape>>& ShapesOOP::getShapes()
 {
 	return shapes;
 }
 
 void ShapesOOP::update(float dt)
 {
+	auto start = chrono::high_resolution_clock::now();
+
 	updatePositions(dt);
 
 	for (int i{ 0 }; i < shapes.size() - 1; ++i)
 	{
 		for (int j{ i + 1 }; j < shapes.size(); ++j)
 		{
-			shapes[i]->checkCollision(shapes[j]);
+			CollisionSolver::solveCollision(shapes[i].get(), shapes[j].get());
+			//shapes[i]->solveCollision(shapes[j].get());
 		}
 	}
+
+	auto end = chrono::high_resolution_clock::now();
+	auto time = chrono::duration_cast<chrono::milliseconds>(end - start);
+
+	if (counter >= NUM_TIME_SAMPLES)
+		counter = 0;
+
+	timeSamples[counter] = time.count();
+	long long sum{ accumulate(timeSamples.begin(), timeSamples.end(), 0LL) };
+	++counter;
+	string title{ "num shapes: " + to_string(shapes.size()) + ", update time: " + to_string(sum / NUM_TIME_SAMPLES) + "ms" };
+	renderer.getWindow()->setTitle(title);
 
 	fillShaderData();
 	renderer.setVertices(shaderData);
@@ -79,10 +110,10 @@ void ShapesOOP::update(float dt)
 
 void ShapesOOP::updatePositions(float dt)
 {
-	dt = 0.001f;
+	//dt = 0.001f;
 	for (uint32_t i{ 0 }; i < shapes.size(); ++i)
 	{
-		Shape* shape{ shapes[i] };
+		shared_ptr<Shape> shape{ shapes[i] };
 
 		shape->position += (shape->velocity * dt);
 		/*if (i == 0)
@@ -100,7 +131,7 @@ void ShapesOOP::fillShaderData()
 
 	for (size_t i{ 0 }; i < shapes.size(); ++i)
 	{
-		Shape* shape{ shapes[i] };
+		shared_ptr<Shape> shape{ shapes[i] };
 		Vec2 pos{ shape->position };
 
 		for (size_t v1{ shape->vertices.size() - 1 }, v2{ 0 }; v2 < shape->vertices.size(); v1 = v2, ++v2)
