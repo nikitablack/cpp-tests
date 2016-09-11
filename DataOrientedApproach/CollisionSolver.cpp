@@ -11,6 +11,16 @@ void CollisionSolver::solveCollision(Shape* shapeA, Shape* shapeB)
 	if (shapeA->massInverse == 0 && shapeB->massInverse == 0)
 		return;
 
+	math::Bounds boundsA(shapeA->bounds);
+	math::Bounds boundsB(shapeB->bounds);
+	bool boundsSeparated{ boundsA.bottomRight.x < boundsB.topLeft.x ||
+		boundsA.topLeft.x > boundsB.bottomRight.x ||
+		boundsA.bottomRight.y < boundsB.topLeft.y ||
+		boundsA.topLeft.y > boundsB.bottomRight.y };
+
+	if (boundsSeparated)
+		return;
+
 	Vec2 vr{ shapeA->velocity - shapeB->velocity };
 
 	Overlap result1(checkOverlap(shapeA, shapeB));

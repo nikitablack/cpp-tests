@@ -5,7 +5,7 @@
 using namespace std;
 using namespace Microsoft::WRL;
 
-GraphicsDX11::GraphicsDX11(UINT bufferCount, string name, LONG width, LONG height) : bufferCount{ bufferCount }
+GraphicsDX11::GraphicsDX11(UINT bufferCount, string name, LONG width, LONG height) : bufferCount{ bufferCount }, width{ width }, height{ height }
 {
 	createWindow(name, width, height);
 	createFactory();

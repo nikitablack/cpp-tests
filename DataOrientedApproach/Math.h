@@ -17,4 +17,10 @@ namespace math
 	{
 		return from + (to - from) * static_cast<float>(rand()) / RAND_MAX;
 	}
+
+	struct Bounds
+	{
+		Vec2 topLeft;
+		Vec2 bottomRight;
+	};
 }

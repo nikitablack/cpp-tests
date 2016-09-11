@@ -89,7 +89,7 @@ void ShapesDX11::createConstantBuffer()
 	desc.StructureByteStride = 0;
 
 	XMFLOAT4X4 matrixProjection;
-	XMMATRIX matrixProjectionDX(XMMatrixOrthographicOffCenterLH(0.0f, 800.0f, 600.0f, 0.0f, 0.0f, 1.0f));
+	XMMATRIX matrixProjectionDX(XMMatrixOrthographicOffCenterLH(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 0.0f, 1.0f));
 	XMStoreFloat4x4(&matrixProjection, matrixProjectionDX);
 
 	D3D11_SUBRESOURCE_DATA initialData;

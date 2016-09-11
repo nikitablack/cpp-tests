@@ -9,15 +9,11 @@ using namespace std;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-	const LONG width{ 800 };
-	const LONG height{ 600 };
-	const UINT bufferCount{ 3 };
-
 	shared_ptr<ShapesOOP> shapesDemo;
 
 	try
 	{
-		shapesDemo = make_shared<ShapesOOP>(100);
+		shapesDemo = make_shared<ShapesOOP>(100, 1366.0f, 768.0f);
 	}
 	catch (runtime_error& err)
 	{

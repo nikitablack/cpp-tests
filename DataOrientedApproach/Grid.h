@@ -2,22 +2,35 @@
 
 #include <vector>
 #include <memory>
-#include "Shape.h"
 
 struct Cell
 {
-	std::vector<std::shared_ptr<Shape>> shapes;
+	std::vector<std::shared_ptr<class Shape>> shapes;
 };
 
 class Grid
 {
 public:
-	Grid(uint32_t width, uint32_t height);
-	void addShape(Shape* shape);
+	Grid(float width, float height, uint32_t rows, uint32_t columns);
+	void addShape(std::shared_ptr<class Shape>);
 	void clear();
+	void solveCollisions();
 
 private:
-	uint32_t w;
-	uint32_t h;
+	float width;
+	float height;
+	uint32_t numRows;
+	uint32_t numColumns;
 	std::vector<std::unique_ptr<Cell>> cells;
+
+private:
+	struct CellRange
+	{
+		int colStart;
+		int rowStart;
+		int colEnd;
+		int rowEnd;
+	};
+
+	CellRange getCellRange(class Shape* shape);
 };

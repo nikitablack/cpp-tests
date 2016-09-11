@@ -3,6 +3,7 @@
 #include <vector>
 #include "Vec2.h"
 #include "Color.h"
+#include "Math.h"
 
 #undef max
 #undef min
@@ -24,6 +25,7 @@ public:
 	float massInverse;
 	Color color;
 	std::vector<Vec2> vertices;
+	math::Bounds bounds;
 
 	Shape(uint32_t numVertices, float radius, Vec2 pos, Vec2 vel, float m, Color col);
 };

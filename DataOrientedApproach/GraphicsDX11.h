@@ -29,4 +29,6 @@ protected:
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11RenderTargetView>> renderTargetViews;
+	LONG width;
+	LONG height;
 };

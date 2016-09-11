@@ -12,15 +12,16 @@ using namespace math;
 namespace
 {
 	int NUM_TIME_SAMPLES{ 16 };
+	uint32_t NUM_PHYSICS_STEPS{ 20 };
 }
 
-ShapesOOP::ShapesOOP(uint32_t numShapes) : timeSamples(NUM_TIME_SAMPLES)
+ShapesOOP::ShapesOOP(uint32_t numShapes, float width, float height) : renderer{ 3, "Shapes OOP", static_cast<LONG>(width), static_cast<LONG>(height) }, timeSamples(NUM_TIME_SAMPLES), grid{ width, height, /*10, 10*/100, 50 }, width{ width }, height{ height }
 {
 	// walls
-	shapes.push_back(make_shared<Wall>(10.0f, 600.0f, Vec2{ 0.0f, 0.0f }));
-	shapes.push_back(make_shared<Wall>(800.0f, 10.0f, Vec2{ 0.0f, 0.0f }));
-	shapes.push_back(make_shared<Wall>(10.0f, 600.0f, Vec2{ 790.0f, 0.0f }));
-	shapes.push_back(make_shared<Wall>(800.0f, 10.0f, Vec2{ 0.0f, 590.0f }));
+	shapes.push_back(make_shared<Wall>(10.0f, height, Vec2{ 0.0f, 0.0f }));
+	shapes.push_back(make_shared<Wall>(width, 10.0f, Vec2{ 0.0f, 0.0f }));
+	shapes.push_back(make_shared<Wall>(10.0f, height, Vec2{ width - 10, 0.0f }));
+	shapes.push_back(make_shared<Wall>(width, 10.0f, Vec2{ 0.0f, height - 10 }));
 
 	numVertices += 16 * 3;
 
@@ -34,6 +35,7 @@ ShapesOOP::ShapesOOP(uint32_t numShapes) : timeSamples(NUM_TIME_SAMPLES)
 			addShapes(50);
 			break;
 		case 109:
+			removeShapes(50);
 			break;
 		}
 	};
@@ -46,29 +48,56 @@ void ShapesOOP::addShapes(uint32_t numShapes)
 	uint32_t numTriangles{ 0 };
 	for (uint32_t i{ 0 }; i < numShapes; ++i)
 	{
-		/*uint32_t numVertices{ 4 + i * 1 };
+		/*uint32_t numShapeVertices{ 6 };
+		float radius{ 100.0f };
+		Vec2 pos{ 500.0f, 400.0f };
+		Vec2 vel{ -100.0f, 0.0f };
+		float mass{ 1.0f };
+		Color col{ randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f) };*/
+
+		/*uint32_t numShapeVertices{ 4 + i * 1 };
 		float radius{ 100.0f };
 		Vec2 pos{ 200.0f + 300.0f * i, 300.0f - 0.0f * i };
 		Vec2 vel{ 100.0f - 200.0f * i, 0.0f + 0.0f * i };
 		float mass{ 1.0f };
 		Color col{ randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f) };*/
 
-		uint32_t numVertices{ static_cast<uint32_t>(randRange(3, 6)) };
-		float radius{ randRange(5.0f, 10.0f) };
-		Vec2 pos{ randRange(40.0f, 760.0f), randRange(40.0f, 560.0f) };
+		uint32_t numShapeVertices{ static_cast<uint32_t>(randRange(3, 6)) };
+		float radius{ randRange(1.0f, 2.0f) };
+		Vec2 pos{ randRange(40.0f, width - 40.0f), randRange(40.0f, height - 40.0f) };
 		Vec2 vel{ randRange(-50.0f, 50.0f), randRange(-50.0f, 50.0f) };
 		float mass{ randRange(1.0f, 5.0f) };
 		Color col{ randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f) };
 
-		shapes.push_back(make_shared<Shape>(numVertices, radius, pos, vel, mass, col));
+		shapes.push_back(make_shared<Shape>(numShapeVertices, radius, pos, vel, mass, col));
 
-		numTriangles += numVertices;
+		numTriangles += numShapeVertices;
 	}
 
 	numVertices += numTriangles * 3;
 
 	renderer.createVertexBuffer(static_cast<UINT>(numVertices * sizeof(ShapeShaderData)));
 	shaderData.reserve(numVertices * 5);
+}
+
+void ShapesOOP::removeShapes(uint32_t numShapes)
+{
+	if (numShapes < shapes.size())
+	{
+		uint32_t numTriangles{ 0 };
+		for (uint32_t i{ 0 }; i < numShapes; ++i)
+		{
+			size_t numShapeVertices{ shapes[shapes.size() - 1 - i]->vertices.size() };
+			numTriangles += static_cast<uint32_t>(numShapeVertices);
+		}
+
+		numVertices -= numTriangles * 3;
+
+		renderer.createVertexBuffer(static_cast<UINT>(numVertices * sizeof(ShapeShaderData)));
+		shaderData.reserve(numVertices * 5);
+
+		shapes.resize(shapes.size() - numShapes);
+	}
 }
 
 const vector<shared_ptr<class Shape>>& ShapesOOP::getShapes()
@@ -78,17 +107,23 @@ const vector<shared_ptr<class Shape>>& ShapesOOP::getShapes()
 
 void ShapesOOP::update(float dt)
 {
+	//dt = 0.003f;
 	auto start = chrono::high_resolution_clock::now();
 
-	updatePositions(dt);
-
-	for (int i{ 0 }; i < shapes.size() - 1; ++i)
+	float dtStep{ dt / NUM_PHYSICS_STEPS };
+	for (uint32_t s{ 0 }; s < NUM_PHYSICS_STEPS; ++s)
 	{
-		for (int j{ i + 1 }; j < shapes.size(); ++j)
+		updatePositions(dtStep);
+		updateGrid();
+		grid.solveCollisions();
+
+		/*for (int i{ 0 }; i < shapes.size() - 1; ++i)
 		{
-			CollisionSolver::solveCollision(shapes[i].get(), shapes[j].get());
-			//shapes[i]->solveCollision(shapes[j].get());
-		}
+			for (int j{ i + 1 }; j < shapes.size(); ++j)
+			{
+				CollisionSolver::solveCollision(shapes[i].get(), shapes[j].get());
+			}
+		}*/
 	}
 
 	auto end = chrono::high_resolution_clock::now();
@@ -111,17 +146,41 @@ void ShapesOOP::update(float dt)
 void ShapesOOP::updatePositions(float dt)
 {
 	//dt = 0.001f;
-	for (uint32_t i{ 0 }; i < shapes.size(); ++i)
+	for (shared_ptr<Shape>& shape : shapes)
 	{
-		shared_ptr<Shape> shape{ shapes[i] };
-
 		shape->position += (shape->velocity * dt);
-		/*if (i == 0)
+
+		float minX{ std::numeric_limits<float>::max() };
+		float maxX{ std::numeric_limits<float>::lowest() };
+		float minY{ std::numeric_limits<float>::max() };
+		float maxY{ std::numeric_limits<float>::lowest() };
+
+		for (const Vec2& v : shape->vertices)
 		{
-			//OutputDebugString((to_string(dt) + "\n").data());
-			//OutputDebugString(("velocity: " + to_string(shape->velocity.x) + ", " + to_string(shape->velocity.y) + "\n").data());
-			//OutputDebugString(("pos: " + to_string(shape->position.x) + ", " + to_string(shape->position.y) + "\n").data());
-		}*/
+			if (v.x < minX)
+				minX = v.x;
+
+			if (v.x > maxX)
+				maxX = v.x;
+
+			if (v.y < minY)
+				minY = v.y;
+
+			if (v.y > maxY)
+				maxY = v.y;
+		}
+
+		shape->bounds = { { shape->position.x + minX, shape->position.y + minY },{ shape->position.x + maxX, shape->position.y + maxY } };
+	}
+}
+
+void ShapesOOP::updateGrid()
+{
+	grid.clear();
+
+	for (shared_ptr<Shape>& shape : shapes)
+	{
+		grid.addShape(shape);
 	}
 }
 
