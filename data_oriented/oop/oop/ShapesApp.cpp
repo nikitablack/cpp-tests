@@ -36,7 +36,7 @@ ShapesApp& ShapesApp::getInstance(uint32_t const numShapes, float const width, f
 	return app;
 }
 
-ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }
+ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }
 {
 	// walls
 	_shapes.push_back(make_shared<Shape>(Shape::createWall(10.0f, height, Vec2{ 0.0f, 0.0f })));
@@ -64,7 +64,7 @@ void ShapesApp::addShapes(uint32_t const numShapes)
 		Color col{ randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f) };*/
 
 		uint32_t const numShapeVertices{ static_cast<uint32_t>(randRange(3, 6)) };
-		float const radius{ randRange(10.0f, 20.0f) };
+		float const radius{ randRange(1.0f, 2.0f) };
 		Vec2 const pos{ randRange(40.0f, wSize.x - 40.0f), randRange(40.0f, wSize.y - 40.0f) };
 		Vec2 const vel{ randRange(-50.0f, 50.0f), randRange(-50.0f, 50.0f) };
 		float const mass{ randRange(1.0f, 5.0f) };
@@ -117,14 +117,8 @@ void ShapesApp::update(float const dt)
 	for (uint32_t s{ 0 }; s < NUM_PHYSICS_STEPS; ++s)
 	{
 		updatePositions(dtStep);
-
-		for (size_t i{ 0 }; i < _shapes.size() - 1; ++i)
-		{
-			for (size_t j{ i + 1 }; j < _shapes.size(); ++j)
-			{
-				CollisionSolver::solveCollision(_shapes[i].get(), _shapes[j].get());
-			}
-		}
+		_grid.reset(_shapes);
+		_grid.solveCollisions();
 	}
 
 	auto const time{ duration_cast<milliseconds>(high_resolution_clock::now() - start) };
