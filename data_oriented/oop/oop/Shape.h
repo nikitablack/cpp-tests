@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "Grid.h"
 #include "Math.h"
 
 struct ShapeShaderData
@@ -27,4 +28,5 @@ public:
 	math::Color color;
 	std::vector<math::Vec2> vertices;
 	math::Bounds bounds;
+	Grid::GridCellsRange cellsRange;
 };
