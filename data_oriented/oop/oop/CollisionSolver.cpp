@@ -146,6 +146,7 @@ void CollisionSolver::solveCollision(Shape * const shapeA, Shape * const shapeB)
 	shapeA->velocity += n * (j * shapeA->massInverse);
 	shapeB->velocity -= n * (j * shapeB->massInverse);
 
-	shapeA->position -= n * d1;
-	shapeB->position += n * d2;
+	// don't move shapes apart immediately but instead accumulate overlap resolution and apply it later in one go
+	shapeA->overlapResolveAccumulator -= n * d1;
+	shapeB->overlapResolveAccumulator += n * d2;
 }

@@ -24,6 +24,7 @@ public:
 public:
 	math::Vec2 position{ 0.0f, 0.0f };
 	math::Vec2 velocity{ 0.0f, 0.0f };
+	math::Vec2 overlapResolveAccumulator{ 0.0f, 0.0f };
 	float massInverse;
 	math::Color color;
 	std::vector<math::Vec2> vertices;
