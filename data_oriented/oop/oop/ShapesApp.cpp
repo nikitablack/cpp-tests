@@ -151,6 +151,10 @@ void ShapesApp::updatePositions(float const dt)
 #undef min
 	for (shared_ptr<Shape> & shape : _shapes)
 	{
+		// move shape to resolve overlapping and reset accumulator
+		shape->position += shape->overlapResolveAccumulator;
+		shape->overlapResolveAccumulator *= 0.0f;
+
 		shape->position += (shape->velocity * dt);
 
 		float minX{ std::numeric_limits<float>::max() };
