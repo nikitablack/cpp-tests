@@ -132,6 +132,7 @@
     <ClInclude Include="Shape.h" />
     <ClInclude Include="ShapesApp.h" />
     <ClInclude Include="ShapesRenderer.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>

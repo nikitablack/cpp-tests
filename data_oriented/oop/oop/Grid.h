@@ -22,7 +22,7 @@ public:
 public:
 	Grid(float const width, float const height, uint32_t const rows, uint32_t const columns);
 	void reset(std::vector<std::shared_ptr<class Shape>> const & shapes);
-	void solveCollisions() const;
+	void solveCollisions(class ThreadPool& threadPool) const;
 
 private:
 	float _width;

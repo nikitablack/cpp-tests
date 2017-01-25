@@ -1,6 +1,7 @@
 #include "CollisionSolver.h"
 #include "Grid.h"
 #include "Shape.h"
+#include "ThreadPool.h"
 
 using namespace std;
 
@@ -64,32 +65,54 @@ void Grid::reset(vector<shared_ptr<Shape>> const & shapes)
 	}
 }
 
-void Grid::solveCollisions() const
+void Grid::solveCollisions(ThreadPool& threadPool) const
 {
-	for (size_t c{ 0 }; c < _cells.size(); ++c)
+	vector<future<void>> results;
+	results.reserve(threadPool.getSize());
+
+	size_t const cellsPerThread{ _cells.size() / threadPool.getSize() };
+	for (size_t t{ 0 }; t < threadPool.getSize(); ++t)
 	{
-		Cell const & cell{ _cells[c] };
+		size_t indStart{ t * cellsPerThread };
+		size_t indEnd{ t < (threadPool.getSize() - 1) ? (indStart + cellsPerThread - 1) : (_cells.size() - 1) };
 
-		int const currRow{ static_cast<int>(c / _numColumns) };
-		int const currCol{ static_cast<int>(c - currRow * _numColumns) };
-
-		for (int i{ 0 }; i < static_cast<int>(cell.shapes.size()) - 1; ++i)
+		future<void> result{ threadPool.enqueue(
+			[indStart, indEnd, this]()
 		{
-			GridCellsRange const & rangeA{ cell.shapes[i]->cellsRange };
-
-			for (int j{ i + 1 }; j < cell.shapes.size(); ++j)
+			for (size_t c{ indStart }; c < indEnd; ++c)
 			{
-				if (cell.shapes[i]->massInverse == 0 && cell.shapes[j]->massInverse == 0)
-					continue;
+				Cell const & cell{ _cells[c] };
 
-				GridCellsRange const & rangeB{ cell.shapes[j]->cellsRange };
+				int const currRow{ static_cast<int>(c / _numColumns) };
+				int const currCol{ static_cast<int>(c - currRow * _numColumns) };
 
-				bool shouldCheck{ (rangeA.rowStart == currRow || rangeB.rowStart == currRow) &&
-				(rangeA.colStart == currCol || rangeB.colStart == currCol) };
+				for (int i{ 0 }; i < static_cast<int>(cell.shapes.size()) - 1; ++i)
+				{
+					GridCellsRange const & rangeA{ cell.shapes[i]->cellsRange };
 
-				if (shouldCheck)
-					CollisionSolver::solveCollision(cell.shapes[i].get(), cell.shapes[j].get());
+					for (int j{ i + 1 }; j < cell.shapes.size(); ++j)
+					{
+						if (cell.shapes[i]->massInverse == 0 && cell.shapes[j]->massInverse == 0)
+							continue;
+
+						GridCellsRange const & rangeB{ cell.shapes[j]->cellsRange };
+
+						bool shouldCheck{ (rangeA.rowStart == currRow || rangeB.rowStart == currRow) &&
+						(rangeA.colStart == currCol || rangeB.colStart == currCol) };
+
+						if (shouldCheck)
+							CollisionSolver::solveCollision(cell.shapes[i].get(), cell.shapes[j].get());
+					}
+				}
 			}
 		}
+		) };
+
+		results.push_back(move(result));
+	}
+
+	for (auto&& result : results)
+	{
+		result.get();
 	}
 }

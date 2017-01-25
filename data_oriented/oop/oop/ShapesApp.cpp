@@ -36,7 +36,7 @@ ShapesApp& ShapesApp::getInstance(uint32_t const numShapes, float const width, f
 	return app;
 }
 
-ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }
+ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }, _threadPool{ 4 }
 {
 	// walls
 	_shapes.push_back(make_shared<Shape>(Shape::createWall(10.0f, height, Vec2{ 0.0f, 0.0f })));
@@ -118,7 +118,7 @@ void ShapesApp::update(float const dt)
 	{
 		updatePositions(dtStep);
 		_grid.reset(_shapes);
-		_grid.solveCollisions();
+		_grid.solveCollisions(_threadPool);
 	}
 
 	auto const time{ duration_cast<milliseconds>(high_resolution_clock::now() - start) };
