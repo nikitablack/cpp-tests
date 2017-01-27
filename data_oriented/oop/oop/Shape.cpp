@@ -18,13 +18,13 @@ Shape::Shape(uint32_t const numVertices, float const radius, Vec2 const pos, Vec
 	}
 }
 
-Shape Shape::createWall(float const w, float const h, Vec2 const pos)
+shared_ptr<Shape> Shape::createWall(float const w, float const h, Vec2 const pos)
 {
-	Shape wall{ 4, 1.0f, pos, { 0.0f, 0.0f }, numeric_limits<float>::infinity(), { 1.0f, 0.0f, 0.0f } };
-	wall.vertices[0] = { 0.0f, 0.0f };
-	wall.vertices[1] = { w, 0.0f };
-	wall.vertices[2] = { w, h };
-	wall.vertices[3] = { 0.0f, h };
+	shared_ptr<Shape> wall{ make_shared<Shape>(4, 1.0f, pos, Vec2{ 0.0f, 0.0f }, numeric_limits<float>::infinity(), Color{ 1.0f, 0.0f, 0.0f }) };
+	wall->vertices[0] = { 0.0f, 0.0f };
+	wall->vertices[1] = { w, 0.0f };
+	wall->vertices[2] = { w, h };
+	wall->vertices[3] = { 0.0f, h };
 
 	return wall;
 }

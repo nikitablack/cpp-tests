@@ -20,6 +20,9 @@ public:
 		->std::future<typename std::result_of<F(Args...)>::type>;
 	~ThreadPool();
 	size_t getSize();
+
+	template<uint32_t N, typename C, typename F>
+	void runTasksSync(C&& cont, F&& task);
 private:
 	// need to keep track of threads so we can join them
 	std::vector< std::thread > workers;
@@ -101,4 +104,39 @@ inline ThreadPool::~ThreadPool()
 inline size_t ThreadPool::getSize()
 {
 	return size;
+}
+
+template<uint32_t N, typename C, typename F>
+void ThreadPool::runTasksSync(C&& cont, F&& task)
+{
+	std::array<std::future<void>, N> results;
+
+	uint32_t numPerThread{ static_cast<uint32_t>(ceil(static_cast<float>(cont.size()) / (N + 1))) };
+	for (size_t t{ 0 }; t < N; ++t)
+	{
+		size_t indStart{ t * numPerThread };
+		size_t indEnd{ indStart + numPerThread - 1 };
+
+		std::future<void> result{ enqueue(
+			[indStart, indEnd, &cont, &task]()
+		{
+			for (size_t i{ indStart }; i <= indEnd; ++i)
+			{
+				task(cont, i);
+			}
+		}
+		) };
+
+		results[t] = move(result);
+	}
+
+	for (size_t i{ numPerThread * N }; i < cont.size(); ++i)
+	{
+		task(cont, i);
+	}
+
+	for (std::future<void>& result : results)
+	{
+		result.get();
+	}
 }

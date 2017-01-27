@@ -3,6 +3,7 @@
 #include <numeric>
 
 #include "CollisionSolver.h"
+#include "Constants.h"
 #include "Math.h"
 #include "Shape.h"
 #include "ShapesApp.h"
@@ -13,7 +14,7 @@ using namespace std;
 
 namespace
 {
-	int const NUM_TIME_SAMPLES{ 16 };
+	uint32_t const NUM_TIME_SAMPLES{ 16 };
 	uint32_t const NUM_PHYSICS_STEPS{ 20 };
 
 	auto keyPressHandler = [](WPARAM const wParam)
@@ -36,13 +37,13 @@ ShapesApp& ShapesApp::getInstance(uint32_t const numShapes, float const width, f
 	return app;
 }
 
-ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }, _threadPool{ 4 }
+ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }, _threadPool{ Constants::NUM_THREADS }
 {
 	// walls
-	_shapes.push_back(make_shared<Shape>(Shape::createWall(10.0f, height, Vec2{ 0.0f, 0.0f })));
-	_shapes.push_back(make_shared<Shape>(Shape::createWall(width, 10.0f, Vec2{ 0.0f, 0.0f })));
-	_shapes.push_back(make_shared<Shape>(Shape::createWall(10.0f, height, Vec2{ width - 10, 0.0f })));
-	_shapes.push_back(make_shared<Shape>(Shape::createWall(width, 10.0f, Vec2{ 0.0f, height - 10 })));
+	_shapes.push_back(Shape::createWall(10.0f, height, Vec2{ 0.0f, 0.0f }));
+	_shapes.push_back(Shape::createWall(width, 10.0f, Vec2{ 0.0f, 0.0f }));
+	_shapes.push_back(Shape::createWall(10.0f, height, Vec2{ width - 10, 0.0f }));
+	_shapes.push_back(Shape::createWall(width, 10.0f, Vec2{ 0.0f, height - 10 }));
 
 	_numVertices += 16 * 3;
 
@@ -117,7 +118,7 @@ void ShapesApp::update(float const dt)
 	for (uint32_t s{ 0 }; s < NUM_PHYSICS_STEPS; ++s)
 	{
 		updatePositions(dtStep);
-		_grid.reset(_shapes);
+		_grid.reset(_shapes, _threadPool);
 		_grid.solveCollisions(_threadPool);
 	}
 
@@ -143,8 +144,10 @@ void ShapesApp::updatePositions(float const dt)
 {	
 #undef max
 #undef min
-	for (shared_ptr<Shape> & shape : _shapes)
+	auto updatePosition{ [dt](vector<shared_ptr<Shape>> const & shapes, size_t const i)
 	{
+		shared_ptr<Shape> const & shape{ shapes[i] };
+
 		// move shape to resolve overlapping and reset accumulator
 		shape->position += shape->overlapResolveAccumulator;
 		shape->overlapResolveAccumulator *= 0.0f;
@@ -172,7 +175,9 @@ void ShapesApp::updatePositions(float const dt)
 		}
 
 		shape->bounds = { { shape->position.x + minX, shape->position.y + minY },{ shape->position.x + maxX, shape->position.y + maxY } };
-	}
+	} };
+
+	_threadPool.runTasksSync<Constants::NUM_THREADS>(_shapes, updatePosition);
 }
 
 void ShapesApp::fillShaderData()

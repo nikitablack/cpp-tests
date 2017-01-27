@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <mutex>
 #include <vector>
 
 #include "Grid.h"
@@ -19,7 +21,7 @@ class Shape
 public:
 	Shape(uint32_t const numVertices, float radius, math::Vec2 const pos, math::Vec2 const vel, float m, math::Color const col);
 
-	static Shape createWall(float const w, float const h, math::Vec2 const pos);
+	static std::shared_ptr<Shape> createWall(float const w, float const h, math::Vec2 const pos);
 
 public:
 	math::Vec2 position{ 0.0f, 0.0f };
@@ -30,4 +32,5 @@ public:
 	std::vector<math::Vec2> vertices;
 	math::Bounds bounds;
 	Grid::GridCellsRange cellsRange;
+	std::mutex mtx;
 };

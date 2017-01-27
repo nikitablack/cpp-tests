@@ -71,9 +71,13 @@ namespace
 		return{ min, max };
 	}
 
-	optional<Overlap> checkOverlap(Shape const * const a, Shape const * const b)
+	optional<Overlap> checkOverlap(Shape * const a, Shape * const b)
 	{
-		Vec2 const d{ b->position - a->position };
+		Vec2 d;
+		{
+			lock_guard<mutex, mutex> lock(a->mtx, b->mtx);
+			d = b->position - a->position;
+		}
 		float minPenetration{ std::numeric_limits<float>::max() };
 		Vec2 normal;
 
@@ -139,14 +143,18 @@ void CollisionSolver::solveCollision(Shape * const shapeA, Shape * const shapeB)
 		d2 *= -1;
 	}
 
-	Vec2 const vRel{ shapeA->velocity - shapeB->velocity };
+	{
+		lock_guard<mutex, mutex> lock{ shapeA->mtx, shapeB->mtx };
 
-	float const j{ -n.dot(vRel) * 2 / (shapeA->massInverse + shapeB->massInverse) };
+		Vec2 const vRel{ shapeA->velocity - shapeB->velocity };
 
-	shapeA->velocity += n * (j * shapeA->massInverse);
-	shapeB->velocity -= n * (j * shapeB->massInverse);
+		float const j{ -n.dot(vRel) * 2 / (shapeA->massInverse + shapeB->massInverse) };
 
-	// don't move shapes apart immediately but instead accumulate overlap resolution and apply it later in one go
-	shapeA->overlapResolveAccumulator -= n * d1;
-	shapeB->overlapResolveAccumulator += n * d2;
+		shapeA->velocity += n * (j * shapeA->massInverse);
+		shapeB->velocity -= n * (j * shapeB->massInverse);
+
+		// don't move shapes apart immediately but instead accumulate overlap resolution and apply it later in one go
+		shapeA->overlapResolveAccumulator -= n * d1;
+		shapeB->overlapResolveAccumulator += n * d2;
+	}
 }
