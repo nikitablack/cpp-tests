@@ -1,4 +1,7 @@
+#include <array>
+
 #include "CollisionSolver.h"
+#include "Constants.h"
 #include "Grid.h"
 #include "Shape.h"
 #include "ThreadPool.h"
@@ -39,80 +42,77 @@ Grid::Grid(float const width, float const height, uint32_t const numRows, uint32
 	_cells.reserve(numRows * numColumns);
 	for (uint32_t i{ 0 }; i < numRows * numColumns; ++i)
 	{
-		_cells.emplace_back();
+		_cells.push_back(make_unique<Cell>());
 	}
 }
 
-void Grid::reset(vector<shared_ptr<Shape>> const & shapes)
+void Grid::reset(vector<shared_ptr<Shape>> const & shapes, ThreadPool& threadPool)
 {
-	for (auto & cell : _cells)
-	{
-		cell.shapes.clear();
-	}
+	clearCells(threadPool);
+	assignShapesToCells(shapes, threadPool);
+}
 
-	for (shared_ptr<Shape> const & shape : shapes)
+void Grid::solveCollisions(ThreadPool& threadPool) const
+{
+	auto doMath{ [this](vector<unique_ptr<Cell>> const & cells, size_t const i)
 	{
+		unique_ptr<Cell> const & cell{ cells[i] };
+
+		int const currRow{ static_cast<int>(i / _numColumns) };
+		int const currCol{ static_cast<int>(i - currRow * _numColumns) };
+
+		for (int i{ 0 }; i < static_cast<int>(cell->shapes.size()) - 1; ++i)
+		{
+			GridCellsRange const & rangeA{ cell->shapes[i]->cellsRange };
+
+			for (int j{ i + 1 }; j < cell->shapes.size(); ++j)
+			{
+				if (cell->shapes[i]->massInverse == 0 && cell->shapes[j]->massInverse == 0)
+					continue;
+
+				GridCellsRange const & rangeB{ cell->shapes[j]->cellsRange };
+
+				bool shouldCheck{ (rangeA.rowStart == currRow || rangeB.rowStart == currRow) &&
+					(rangeA.colStart == currCol || rangeB.colStart == currCol) };
+
+				if (shouldCheck)
+					CollisionSolver::solveCollision(cell->shapes[i].get(), cell->shapes[j].get());
+			}
+		}
+	} };
+
+	threadPool.runTasksSync<Constants::NUM_THREADS>(_cells, doMath);
+}
+
+void Grid::clearCells(ThreadPool& threadPool)
+{
+	auto clearCell{ [](vector<unique_ptr<Cell>> const & cells, size_t const i)
+	{
+		unique_ptr<Cell> const & cell{ cells[i] };
+		cell->shapes.clear();
+	} };
+
+	threadPool.runTasksSync<Constants::NUM_THREADS>(_cells, clearCell);
+}
+
+void Grid::assignShapesToCells(vector<shared_ptr<Shape>> const & shapes, ThreadPool& threadPool)
+{
+	auto assignShapeToCells{ [this](vector<shared_ptr<Shape>> const & shapes, size_t const i)
+	{
+		shared_ptr<Shape> const & shape{ shapes[i] };
+
 		shape->cellsRange = getCellRange(shape.get(), _width, _height, _numRows, _numColumns);
 
 		for (int c{ shape->cellsRange.colStart }; c <= shape->cellsRange.colEnd; ++c)
 		{
 			for (int r{ shape->cellsRange.rowStart }; r <= shape->cellsRange.rowEnd; ++r)
 			{
-				Cell & cell{ _cells[r * _numColumns + c] };
-				cell.shapes.push_back(shape);
+				unique_ptr<Cell> const & cell{ _cells[r * _numColumns + c] };
+				lock_guard<mutex> const lock{ cell->mtx };
+				cell->shapes.push_back(shape);
 			}
 		}
-	}
-}
+	} };
 
-void Grid::solveCollisions(ThreadPool& threadPool) const
-{
-	vector<future<void>> results;
-	results.reserve(threadPool.getSize());
-
-	size_t const cellsPerThread{ _cells.size() / threadPool.getSize() };
-	for (size_t t{ 0 }; t < threadPool.getSize(); ++t)
-	{
-		size_t indStart{ t * cellsPerThread };
-		size_t indEnd{ t < (threadPool.getSize() - 1) ? (indStart + cellsPerThread - 1) : (_cells.size() - 1) };
-
-		future<void> result{ threadPool.enqueue(
-			[indStart, indEnd, this]()
-		{
-			for (size_t c{ indStart }; c < indEnd; ++c)
-			{
-				Cell const & cell{ _cells[c] };
-
-				int const currRow{ static_cast<int>(c / _numColumns) };
-				int const currCol{ static_cast<int>(c - currRow * _numColumns) };
-
-				for (int i{ 0 }; i < static_cast<int>(cell.shapes.size()) - 1; ++i)
-				{
-					GridCellsRange const & rangeA{ cell.shapes[i]->cellsRange };
-
-					for (int j{ i + 1 }; j < cell.shapes.size(); ++j)
-					{
-						if (cell.shapes[i]->massInverse == 0 && cell.shapes[j]->massInverse == 0)
-							continue;
-
-						GridCellsRange const & rangeB{ cell.shapes[j]->cellsRange };
-
-						bool shouldCheck{ (rangeA.rowStart == currRow || rangeB.rowStart == currRow) &&
-						(rangeA.colStart == currCol || rangeB.colStart == currCol) };
-
-						if (shouldCheck)
-							CollisionSolver::solveCollision(cell.shapes[i].get(), cell.shapes[j].get());
-					}
-				}
-			}
-		}
-		) };
-
-		results.push_back(move(result));
-	}
-
-	for (auto&& result : results)
-	{
-		result.get();
-	}
+	threadPool.runTasksSync<Constants::NUM_THREADS>(shapes, assignShapeToCells);
 }
