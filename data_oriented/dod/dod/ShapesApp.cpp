@@ -34,7 +34,7 @@ namespace
 		POINT const wSize(window->getSize());
 
 		vector<Vec2> vert(numVertices);
-		float const radius{ randRange(10.0f, 20.0f) };
+		float const radius{ randRange(1.0f, 2.0f) };
 		float const sector{ math::TWO_PI / numVertices };
 		for (uint32_t i{ 0 }; i < numVertices; ++i)
 		{
@@ -48,6 +48,7 @@ namespace
 		data.massesInverses.push_back(1 / randRange(1.0f, 5.0f));
 		data.colors.emplace_back(randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f));
 		data.bounds.emplace_back();
+		data.cellsRanges.emplace_back();
 	}
 
 	void createWall(float const w, float const h, Vec2 const pos, ShapesData & data)
@@ -59,6 +60,7 @@ namespace
 		data.colors.emplace_back(1.0f, 0.0f, 0.0f);
 		data.bounds.emplace_back();
 		data.vertices.push_back({ Vec2{ 0.0f, 0.0f }, Vec2{ w, 0.0f }, Vec2{ w, h }, Vec2{ 0.0f, h } });
+		data.cellsRanges.emplace_back();
 	}
 }
 
@@ -68,7 +70,7 @@ ShapesApp& ShapesApp::getInstance(uint32_t const numShapes, float const width, f
 	return app;
 }
 
-ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }
+ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }
 {
 	POINT const wSize(_window->getSize());
 
@@ -125,6 +127,7 @@ void ShapesApp::removeShapes(uint32_t const numShapes)
 		_data.colors.resize(_data.positions.size());
 		_data.vertices.resize(_data.positions.size());
 		_data.bounds.resize(_data.positions.size());
+		_data.cellsRanges.resize(_data.positions.size());
 	}
 }
 
@@ -139,14 +142,8 @@ void ShapesApp::update(float const dt)
 	for (uint32_t s{ 0 }; s < NUM_PHYSICS_STEPS; ++s)
 	{
 		updatePositions(dtStep);
-
-		for (size_t i{ 0 }; i < _data.positions.size() - 1; ++i)
-		{
-			for (size_t j{ i + 1 }; j < _data.positions.size(); ++j)
-			{
-				CollisionSolver::solveCollision(_data, i, j);
-			}
-		}
+		_grid.reset(_data);
+		_grid.solveCollisions(_data);
 	}
 
 	auto const time{ duration_cast<milliseconds>(high_resolution_clock::now() - start) };

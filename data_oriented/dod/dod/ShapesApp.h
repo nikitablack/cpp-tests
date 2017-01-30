@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "Grid.h"
 #include "Shape.h"
 #include "ShapesRenderer.h"
 
@@ -26,4 +27,5 @@ private:
 	std::vector<float> _shaderData;
 	ShapesRenderer _renderer;
 	uint32_t _numVertices{ 0 };
+	Grid _grid;
 };
