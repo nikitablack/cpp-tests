@@ -13,7 +13,6 @@ public:
 	
 	void addShapes(uint32_t const numShapes);
 	void removeShapes(uint32_t const numShapes);
-	//std::vector<std::shared_ptr<class Shape>> const & getShapes() const;
 	void update(float const dt);
 
 private:

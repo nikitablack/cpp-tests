@@ -103,10 +103,19 @@ namespace
 	}
 }
 
-void CollisionSolver::solveCollision(float const massInverseA, float const massInverseB, Bounds const & boundsA, Bounds const & boundsB, Vec2 const posA, Vec2 const posB, vector<Vec2> const & verticesA, vector<Vec2> const & verticesB, Vec2 & velocityA, Vec2 & velocityB, Vec2 & overlapAccumulatorA, Vec2 & overlapAccumulatorB)
+#include "Shape.h"
+void CollisionSolver::solveCollision(ShapesData & data, std::size_t const indA, std::size_t const indB)
 {
-	if (areBothStatic(massInverseA, massInverseB) || !boundsOverlap(boundsA, boundsB))
+	float const massInverseA{ data.massesInverses[indA] };
+	float const massInverseB{ data.massesInverses[indB] };
+
+	if (areBothStatic(massInverseA, massInverseB) || !boundsOverlap(data.bounds[indA], data.bounds[indB]))
 		return;
+
+	Vec2 const & posA{ data.positions[indA] };
+	Vec2 const & posB{ data.positions[indB] };
+	vector<Vec2> const & verticesA{ data.vertices[indA] };
+	vector<Vec2> const & verticesB{ data.vertices[indB] };
 
 	optional<Overlap> const result1(checkOverlap(posA, posB, verticesA, verticesB));
 	if (!result1.has_value())
@@ -120,7 +129,7 @@ void CollisionSolver::solveCollision(float const massInverseA, float const massI
 	Overlap const & overlap2{ result2.value() };
 
 	float const d{ min(overlap1.depth, overlap2.depth) };
-	Vec2 const n{ (overlap1.depth < overlap2.depth) ? overlap1.direction : overlap2.direction };
+	Vec2 const & n{ (overlap1.depth < overlap2.depth) ? overlap1.direction : overlap2.direction };
 
 	float d1{ d * massInverseA / (massInverseA + massInverseB) };
 	float d2{ d - d1 };
@@ -131,6 +140,9 @@ void CollisionSolver::solveCollision(float const massInverseA, float const massI
 		d2 *= -1;
 	}
 
+	Vec2 & velocityA{ data.velocities[indA] };
+	Vec2 & velocityB{ data.velocities[indB] };
+
 	Vec2 const vRel{ velocityA - velocityB };
 
 	float const j{ -n.dot(vRel) * 2 / (massInverseA + massInverseB) };
@@ -139,6 +151,6 @@ void CollisionSolver::solveCollision(float const massInverseA, float const massI
 	velocityB -= n * (j * massInverseB);
 
 	// don't move shapes apart immediately but instead accumulate overlap resolution and apply it later in one go
-	overlapAccumulatorA -= n * d1;
-	overlapAccumulatorB += n * d2;
+	data.overlapAccumulators[indA] -= n * d1;
+	data.overlapAccumulators[indB] += n * d2;
 }

@@ -44,7 +44,7 @@ namespace
 
 		data.positions.emplace_back(randRange(40.0f, wSize.x - 40.0f), randRange(40.0f, wSize.y - 40.0f));
 		data.velocities.emplace_back(randRange(-50.0f, 50.0f), randRange(-50.0f, 50.0f));
-		data.overlapAccumultors.emplace_back();
+		data.overlapAccumulators.emplace_back();
 		data.massesInverses.push_back(1 / randRange(1.0f, 5.0f));
 		data.colors.emplace_back(randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f));
 		data.bounds.emplace_back();
@@ -54,7 +54,7 @@ namespace
 	{
 		data.positions.push_back(pos);
 		data.velocities.emplace_back();
-		data.overlapAccumultors.emplace_back();
+		data.overlapAccumulators.emplace_back();
 		data.massesInverses.push_back(1 / numeric_limits<float>::infinity());
 		data.colors.emplace_back(1.0f, 0.0f, 0.0f);
 		data.bounds.emplace_back();
@@ -104,12 +104,12 @@ void ShapesApp::addShapes(uint32_t const numShapes)
 
 void ShapesApp::removeShapes(uint32_t const numShapes)
 {
-	/*if (numShapes < _shapes.size())
+	if (numShapes < _data.positions.size())
 	{
 		uint32_t numTriangles{ 0 };
 		for (uint32_t i{ 0 }; i < numShapes; ++i)
 		{
-			size_t numShapeVertices{ _shapes[_shapes.size() - 1 - i]->vertices.size() };
+			size_t numShapeVertices{ _data.vertices[_data.positions.size() - 1 - i].size() };
 			numTriangles += static_cast<uint32_t>(numShapeVertices);
 		}
 
@@ -118,14 +118,15 @@ void ShapesApp::removeShapes(uint32_t const numShapes)
 		_renderer.createVertexBuffer(static_cast<UINT>(_numVertices * sizeof(ShapeShaderData)));
 		_shaderData.reserve(_numVertices * 5);
 
-		_shapes.resize(_shapes.size() - numShapes);
-	}*/
+		_data.positions.resize(_data.positions.size() - numShapes);
+		_data.velocities.resize(_data.positions.size());
+		_data.overlapAccumulators.resize(_data.positions.size());
+		_data.massesInverses.resize(_data.positions.size());
+		_data.colors.resize(_data.positions.size());
+		_data.vertices.resize(_data.positions.size());
+		_data.bounds.resize(_data.positions.size());
+	}
 }
-
-/*vector<shared_ptr<Shape>> const & ShapesApp::getShapes() const
-{
-	return _shapes;
-}*/
 
 void ShapesApp::update(float const dt)
 {
@@ -143,12 +144,7 @@ void ShapesApp::update(float const dt)
 		{
 			for (size_t j{ i + 1 }; j < _data.positions.size(); ++j)
 			{
-				CollisionSolver::solveCollision(_data.massesInverses[i], _data.massesInverses[j],
-					_data.bounds[i], _data.bounds[j],
-					_data.positions[i], _data.positions[j],
-					_data.vertices[i], _data.vertices[j],
-					_data.velocities[i], _data.velocities[j],
-					_data.overlapAccumultors[i], _data.overlapAccumultors[j]);
+				CollisionSolver::solveCollision(_data, i, j);
 			}
 		}
 	}
@@ -178,8 +174,7 @@ void ShapesApp::updatePositions(float const dt)
 	for (size_t i{ 0 }; i < _data.positions.size(); ++i)
 	{
 		Vec2 & pos{ _data.positions[i] };
-		Vec2 & overlapAcc{ _data.overlapAccumultors[i] };
-		Vec2 & vel{ _data.velocities[i] };
+		Vec2 & overlapAcc{ _data.overlapAccumulators[i] };
 		vector<Vec2> const & vert{ _data.vertices[i] };
 		Bounds & bounds{ _data.bounds[i] };
 
@@ -187,12 +182,12 @@ void ShapesApp::updatePositions(float const dt)
 		pos += overlapAcc;
 		overlapAcc *= 0.0f;
 
-		pos += (vel * dt);
+		pos += (_data.velocities[i] * dt);
 
-		float minX{ std::numeric_limits<float>::max() };
-		float maxX{ std::numeric_limits<float>::lowest() };
-		float minY{ std::numeric_limits<float>::max() };
-		float maxY{ std::numeric_limits<float>::lowest() };
+		float minX{ numeric_limits<float>::max() };
+		float maxX{ numeric_limits<float>::lowest() };
+		float minY{ numeric_limits<float>::max() };
+		float maxY{ numeric_limits<float>::lowest() };
 
 		for (Vec2 const & v : vert)
 		{

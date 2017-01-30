@@ -34,7 +34,7 @@ struct ShapesData
 {
 	std::vector<math::Vec2> positions;
 	std::vector<math::Vec2> velocities;
-	std::vector<math::Vec2> overlapAccumultors;
+	std::vector<math::Vec2> overlapAccumulators;
 	std::vector<float> massesInverses;
 	std::vector<math::Color> colors;
 	std::vector<std::vector<math::Vec2>> vertices;
