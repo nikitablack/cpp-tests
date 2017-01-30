@@ -4,5 +4,5 @@
 
 struct Constants
 {
-	static uint32_t const NUM_THREADS{ 7 };
+	static uint32_t const NUM_THREADS{ 3 };
 };
