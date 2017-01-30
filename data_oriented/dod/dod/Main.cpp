@@ -9,7 +9,7 @@ using namespace std;
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-	ShapesApp & app{ ShapesApp::getInstance(50, 800.0f, 600.0f) };
+	ShapesApp & app{ ShapesApp::getInstance(50, 1366.0f, 768.0f) };
 
 	MSG msg;
 	ZeroMemory(&msg, sizeof(msg));

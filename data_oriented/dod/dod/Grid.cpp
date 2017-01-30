@@ -1,6 +1,8 @@
 #include "CollisionSolver.h"
+#include "Constants.h"
 #include "Grid.h"
 #include "Shape.h"
+#include "ThreadPool.h"
 
 using namespace math;
 using namespace std;
@@ -39,51 +41,33 @@ Grid::Grid(float const width, float const height, uint32_t const numRows, uint32
 	_cells.reserve(numRows * numColumns);
 	for (uint32_t i{ 0 }; i < numRows * numColumns; ++i)
 	{
-		_cells.emplace_back();
+		_cells.push_back(make_unique<Cell>());
 	}
 }
 
-void Grid::reset(ShapesData & data)
+void Grid::reset(ShapesData & data, ThreadPool & threadPool)
 {
-	for (auto & cell : _cells)
-	{
-		cell.shapes.clear();
-	}
-
-	vector<Bounds> const & bounds{ data.bounds };
-	for(size_t i{0}; i < data.bounds.size(); ++i)
-	{
-		data.cellsRanges[i] = getCellRange(data.bounds[i], _width, _height, _numRows, _numColumns);
-		GridCellsRange cellsRange{ data.cellsRanges[i] };
-
-		for (int c{ cellsRange.colStart }; c <= cellsRange.colEnd; ++c)
-		{
-			for (int r{ cellsRange.rowStart }; r <= cellsRange.rowEnd; ++r)
-			{
-				Cell & cell{ _cells[r * _numColumns + c] };
-				cell.shapes.push_back(i);
-			}
-		}
-	}
+	clearCells(threadPool);
+	assignShapesToCells(data, threadPool);
 }
 
-void Grid::solveCollisions(ShapesData & data) const
+void Grid::solveCollisions(ShapesData & data, ThreadPool & threadPool) const
 {
-	for (size_t c{ 0 }; c < _cells.size(); ++c)
+	auto doMath{ [this, &data](vector<unique_ptr<Cell>> const & cells, size_t const i)
 	{
-		Cell const & cell{ _cells[c] };
+		unique_ptr<Cell> const & cell{ cells[i] };
 
-		int const currRow{ static_cast<int>(c / _numColumns) };
-		int const currCol{ static_cast<int>(c - currRow * _numColumns) };
+		int const currRow{ static_cast<int>(i / _numColumns) };
+		int const currCol{ static_cast<int>(i - currRow * _numColumns) };
 
-		for (int i{ 0 }; i < static_cast<int>(cell.shapes.size()) - 1; ++i)
+		for (int i{ 0 }; i < static_cast<int>(cell->shapes.size()) - 1; ++i)
 		{
-			size_t indA{ cell.shapes[i] };
+			size_t indA{ cell->shapes[i] };
 			GridCellsRange const & rangeA{ data.cellsRanges[indA] };
 
-			for (int j{ i + 1 }; j < cell.shapes.size(); ++j)
+			for (int j{ i + 1 }; j < cell->shapes.size(); ++j)
 			{
-				size_t indB{ cell.shapes[j] };
+				size_t indB{ cell->shapes[j] };
 
 				if (data.massesInverses[indA] == 0 && data.massesInverses[indB] == 0)
 					continue;
@@ -97,5 +81,39 @@ void Grid::solveCollisions(ShapesData & data) const
 					CollisionSolver::solveCollision(data, indA, indB);
 			}
 		}
-	}
+	} };
+
+	threadPool.runTasksSync<Constants::NUM_THREADS>(_cells, doMath, _cells.size());
+}
+
+void Grid::clearCells(ThreadPool& threadPool)
+{
+	auto clearCell{ [](vector<unique_ptr<Cell>> const & cells, size_t const i)
+	{
+		unique_ptr<Cell> const & cell{ cells[i] };
+		cell->shapes.clear();
+	} };
+
+	threadPool.runTasksSync<Constants::NUM_THREADS>(_cells, clearCell, _cells.size());
+}
+
+void Grid::assignShapesToCells(ShapesData & data, ThreadPool& threadPool)
+{
+	auto assignShapeToCells{ [this](ShapesData & data, size_t const i)
+	{
+		data.cellsRanges[i] = getCellRange(data.bounds[i], _width, _height, _numRows, _numColumns);
+		GridCellsRange cellsRange{ data.cellsRanges[i] };
+
+		for (int c{ cellsRange.colStart }; c <= cellsRange.colEnd; ++c)
+		{
+			for (int r{ cellsRange.rowStart }; r <= cellsRange.rowEnd; ++r)
+			{
+				unique_ptr<Cell> const & cell{ _cells[r * _numColumns + c] };
+				lock_guard<mutex> const lock{ cell->mtx };
+				cell->shapes.push_back(i);
+			}
+		}
+	} };
+
+	threadPool.runTasksSync<Constants::NUM_THREADS>(data, assignShapeToCells, data.positions.size());
 }

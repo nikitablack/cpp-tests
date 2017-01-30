@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+#include <mutex>
 #include <vector>
 
 #include "Grid.h"
@@ -24,4 +26,5 @@ struct ShapesData
 	std::vector<std::vector<math::Vec2>> vertices;
 	std::vector<math::Bounds> bounds;
 	std::vector<Grid::GridCellsRange> cellsRanges;
+	std::vector<std::unique_ptr<std::mutex>> mutexes;
 };

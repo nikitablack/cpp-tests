@@ -63,14 +63,21 @@ namespace
 		return{ min, max };
 	}
 
-	optional<Overlap> checkOverlap(Vec2 const posA, Vec2 const posB, vector<Vec2> const & verticesA, vector<Vec2> const & verticesB)
+	optional<Overlap> checkOverlap(ShapesData & data, std::size_t const indA, std::size_t const indB)
 	{
-		Vec2 const d{ posB - posA };
+		Vec2 d;
+		{
+			lock_guard<mutex, mutex> lock(*data.mutexes[indA], *data.mutexes[indB]);
+			d = data.positions[indB] - data.positions[indA];
+		}
 		float minPenetration{ numeric_limits<float>::max() };
 		Vec2 normal;
 
+		vector<Vec2> & verticesA{ data.vertices[indA] };
+		vector<Vec2> & verticesB{ data.vertices[indB] };
+
 		// for each edge of the shape A get it's normal and project both shapes on that normal
-		for (size_t v1{ verticesA.size() - 1 }, v2{ 0 }; v2 < verticesA.size(); v1 = v2, ++v2)
+		for (size_t v1{ data.vertices[indA].size() - 1 }, v2{ 0 }; v2 < data.vertices[indA].size(); v1 = v2, ++v2)
 		{
 			Vec2 const vertex1{ verticesA[v1] };
 			Vec2 const vertex2{ verticesA[v2] };
@@ -117,11 +124,11 @@ void CollisionSolver::solveCollision(ShapesData & data, std::size_t const indA, 
 	vector<Vec2> const & verticesA{ data.vertices[indA] };
 	vector<Vec2> const & verticesB{ data.vertices[indB] };
 
-	optional<Overlap> const result1(checkOverlap(posA, posB, verticesA, verticesB));
+	optional<Overlap> const result1(checkOverlap(data, indA, indB));
 	if (!result1.has_value())
 		return;
 
-	optional<Overlap> const result2(checkOverlap(posB, posA, verticesB, verticesA));
+	optional<Overlap> const result2(checkOverlap(data, indB, indA));
 	if (!result2.has_value())
 		return;
 

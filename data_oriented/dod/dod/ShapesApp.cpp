@@ -3,6 +3,7 @@
 #include <numeric>
 
 #include "CollisionSolver.h"
+#include "Constants.h"
 #include "Math.h"
 #include "Shape.h"
 #include "ShapesApp.h"
@@ -13,7 +14,7 @@ using namespace std;
 
 namespace
 {
-	int const NUM_TIME_SAMPLES{ 16 };
+	uint32_t const NUM_TIME_SAMPLES{ 16 };
 	uint32_t const NUM_PHYSICS_STEPS{ 20 };
 
 	auto keyPressHandler = [](WPARAM const wParam)
@@ -49,6 +50,7 @@ namespace
 		data.colors.emplace_back(randRange(0.0f, 1.0f), randRange(0.0f, 1.0f), randRange(0.0f, 1.0f));
 		data.bounds.emplace_back();
 		data.cellsRanges.emplace_back();
+		data.mutexes.push_back(make_unique<mutex>());
 	}
 
 	void createWall(float const w, float const h, Vec2 const pos, ShapesData & data)
@@ -61,6 +63,7 @@ namespace
 		data.bounds.emplace_back();
 		data.vertices.push_back({ Vec2{ 0.0f, 0.0f }, Vec2{ w, 0.0f }, Vec2{ w, h }, Vec2{ 0.0f, h } });
 		data.cellsRanges.emplace_back();
+		data.mutexes.push_back(make_unique<mutex>());
 	}
 }
 
@@ -70,7 +73,7 @@ ShapesApp& ShapesApp::getInstance(uint32_t const numShapes, float const width, f
 	return app;
 }
 
-ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }
+ShapesApp::ShapesApp(uint32_t const numShapes, float const width, float const height) : _window{ make_shared<Window>(static_cast<LONG>(width), static_cast<LONG>(height), keyPressHandler) }, _renderer{ 3, _window }, _grid{ width, height, 100, 50 }, _threadPool{ Constants::NUM_THREADS }
 {
 	POINT const wSize(_window->getSize());
 
@@ -128,6 +131,7 @@ void ShapesApp::removeShapes(uint32_t const numShapes)
 		_data.vertices.resize(_data.positions.size());
 		_data.bounds.resize(_data.positions.size());
 		_data.cellsRanges.resize(_data.positions.size());
+		_data.mutexes.resize(_data.positions.size());
 	}
 }
 
@@ -142,8 +146,8 @@ void ShapesApp::update(float const dt)
 	for (uint32_t s{ 0 }; s < NUM_PHYSICS_STEPS; ++s)
 	{
 		updatePositions(dtStep);
-		_grid.reset(_data);
-		_grid.solveCollisions(_data);
+		_grid.reset(_data, _threadPool);
+		_grid.solveCollisions(_data, _threadPool);
 	}
 
 	auto const time{ duration_cast<milliseconds>(high_resolution_clock::now() - start) };
@@ -168,18 +172,18 @@ void ShapesApp::updatePositions(float const dt)
 {	
 #undef max
 #undef min
-	for (size_t i{ 0 }; i < _data.positions.size(); ++i)
+	auto updatePosition{ [dt](ShapesData & data, size_t const i)
 	{
-		Vec2 & pos{ _data.positions[i] };
-		Vec2 & overlapAcc{ _data.overlapAccumulators[i] };
-		vector<Vec2> const & vert{ _data.vertices[i] };
-		Bounds & bounds{ _data.bounds[i] };
+		Vec2 & pos{ data.positions[i] };
+		Vec2 & overlapAcc{ data.overlapAccumulators[i] };
+		vector<Vec2> const & vert{ data.vertices[i] };
+		Bounds & bounds{ data.bounds[i] };
 
 		// move shape to resolve overlapping and reset accumulator
 		pos += overlapAcc;
 		overlapAcc *= 0.0f;
 
-		pos += (_data.velocities[i] * dt);
+		pos += (data.velocities[i] * dt);
 
 		float minX{ numeric_limits<float>::max() };
 		float maxX{ numeric_limits<float>::lowest() };
@@ -202,7 +206,9 @@ void ShapesApp::updatePositions(float const dt)
 		}
 
 		bounds = { { pos.x + minX, pos.y + minY },{ pos.x + maxX, pos.y + maxY } };
-	}
+	} };
+
+	_threadPool.runTasksSync<Constants::NUM_THREADS>(_data, updatePosition, _data.positions.size());
 }
 
 void ShapesApp::fillShaderData()

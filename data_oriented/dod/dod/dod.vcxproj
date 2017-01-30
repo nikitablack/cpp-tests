@@ -117,12 +117,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CollisionSolver.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Grid.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Shape.h" />
     <ClInclude Include="ShapesApp.h" />
     <ClInclude Include="ShapesRenderer.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
