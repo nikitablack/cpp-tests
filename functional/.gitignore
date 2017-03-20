@@ -1,0 +1,11 @@
+# Ignored files
+*.suo
+*.user
+*.sdf
+*.opensdf
+*.cso
+*.db
+.vs
+Debug/
+Release/
+x64
