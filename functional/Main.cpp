@@ -77,7 +77,7 @@ int WINAPI WinMain(HINSTANCE const, HINSTANCE const, LPSTR const, int const)
 					float const dtStep{ dt / numPhysicsSteps };
 					for (uint32_t s{ 0 }; s < numPhysicsSteps; ++s)
 					{
-						shapes = updateSimulation(dtStep, shapes, wSize.x, wSize.y);
+						shapes = updateSimulation(dtStep, move(shapes), wSize.x, wSize.y);
 					}
 
 					auto const simTime{ duration_cast<milliseconds>(high_resolution_clock::now() - simStart) };
@@ -86,7 +86,7 @@ int WINAPI WinMain(HINSTANCE const, HINSTANCE const, LPSTR const, int const)
 				}
 
 				vector<float> const shaderData{ getShaderData(shapes) };
-				renderer.render(shaderData);
+				renderer.render(move(shaderData));
 
 				duration<float> const time{ high_resolution_clock::now() - start };
 				dt = time.count();

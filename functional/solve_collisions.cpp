@@ -178,7 +178,7 @@ vector<VelocityAfterImpact> solveCollisions(vector<vector<Shape>> const cellsWit
 		int const currRow{ static_cast<int>(c / columns) };
 		int const currCol{ static_cast<int>(c - currRow * columns) };
 
-		vector<VelocityAfterImpact> tmp{ solveCollisionsForTheCell(cellsWithShapes[c], currRow, currCol) };
+		vector<VelocityAfterImpact> tmp{ solveCollisionsForTheCell(move(cellsWithShapes[c]), currRow, currCol) };
 		for_each(tmp.begin(), tmp.end(), [&newVelocities](VelocityAfterImpact const vel) {
 			newVelocities.push_back(vel);
 		});
