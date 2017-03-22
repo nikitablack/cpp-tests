@@ -37,10 +37,10 @@ vector<Shape> calculatePositionsAndBounds(float const dt, vector<Shape> const sh
 	vector<Shape> updatedShapes;
 	updatedShapes.reserve(shapes.size());
 
-	for_each(shapes.begin(), shapes.end(), [dt, &updatedShapes](Shape const shape)
+	transform(shapes.begin(), shapes.end(), back_inserter(updatedShapes), [dt](Shape const shape)
 	{
 		Shape const newShape{ shape.id, shape.vertices, calculatePosition(shape, dt), shape.velocity, shape.bounds, shape.cellsRange, shape.color, shape.massInverse };
-		updatedShapes.emplace_back(newShape.id, newShape.vertices, newShape.position, newShape.velocity, calculateBounds(newShape), newShape.cellsRange, newShape.color, newShape.massInverse);
+		return Shape{ newShape.id, newShape.vertices, newShape.position, newShape.velocity, calculateBounds(newShape), newShape.cellsRange, newShape.color, newShape.massInverse };
 	});
 
 	return updatedShapes;

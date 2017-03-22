@@ -28,9 +28,9 @@ vector<Shape> calculateCellsRanges(float const width, float const height, uint32
 	vector<Shape> updatedShapes;
 	updatedShapes.reserve(shapes.size());
 
-	for_each(shapes.begin(), shapes.end(), [&updatedShapes, width, height, rows, columns](Shape const shape)
+	transform(shapes.begin(), shapes.end(), back_inserter(updatedShapes), [width, height, rows, columns](Shape const shape)
 	{
-		updatedShapes.emplace_back(shape.id, shape.vertices, shape.position, shape.velocity, shape.bounds, calculateCellsRange(width, height, rows, columns, shape), shape.color, shape.massInverse);
+		return Shape{ shape.id, shape.vertices, shape.position, shape.velocity, shape.bounds, calculateCellsRange(width, height, rows, columns, shape), shape.color, shape.massInverse };
 	});
 
 	return updatedShapes;

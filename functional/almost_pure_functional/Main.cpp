@@ -49,8 +49,9 @@ int WINAPI WinMain(HINSTANCE const, HINSTANCE const, LPSTR const, int const)
 	shapes.push_back(createWall(wSize.x, 10.0f, Vec2{ 0.0f, wSize.y - 10.0f }));
 
 	vector<Shape> const tmp{ createShapes(numShapes, wSize.x, wSize.y) };
-	for_each(tmp.begin(), tmp.end(), [&shapes](Shape const shape) {
-		shapes.push_back(shape);
+	transform(tmp.begin(), tmp.end(), back_inserter(shapes), [](Shape const shape)
+	{
+		return shape;
 	});
 
 	MSG msg;

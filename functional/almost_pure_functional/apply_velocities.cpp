@@ -41,9 +41,9 @@ vector<Shape> applyVelocities(vector<Shape> const shapes, vector<VelocityAfterIm
 	vector<Shape> updatedShapes;
 	updatedShapes.reserve(shapes.size());
 
-	for_each(shapes.begin(), shapes.end(), [&updatedShapes, velocitiesAfterImpact](Shape const shape)
+	transform(shapes.begin(), shapes.end(), back_inserter(updatedShapes), [velocitiesAfterImpact](Shape const shape)
 	{
-		updatedShapes.emplace_back(shape.id, shape.vertices, shape.position, calculateVelocity(shape, velocitiesAfterImpact), shape.bounds, shape.cellsRange, shape.color, shape.massInverse);
+		return Shape{ shape.id, shape.vertices, shape.position, calculateVelocity(shape, velocitiesAfterImpact), shape.bounds, shape.cellsRange, shape.color, shape.massInverse };
 	});
 
 	return updatedShapes;
