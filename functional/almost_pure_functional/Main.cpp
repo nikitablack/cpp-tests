@@ -87,7 +87,7 @@ int WINAPI WinMain(HINSTANCE const, HINSTANCE const, LPSTR const, int const)
 				}
 
 				vector<float> const shaderData{ getShaderData(shapes) };
-				renderer.render(move(shaderData));
+				renderer.render(shaderData);
 
 				duration<float> const time{ high_resolution_clock::now() - start };
 				dt = time.count();
