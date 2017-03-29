@@ -47,16 +47,13 @@ namespace
 tuple<vector<Vec2> const &, vector<Bounds> const &, vector<CellsRange> const &, vector<vector<size_t>> const &> calculatePositionsAndBoundsAndCellsRangesAndGrid(float const dt, float const width, float const height, uint32_t const rows, uint32_t const columns, ShapesData const & data)
 {
 	static vector<Vec2> positions;
-	positions.clear();
-	positions.reserve(data.size());
+	positions.resize(data.size());
 
 	static vector<Bounds> bounds;
-	bounds.clear();
-	bounds.reserve(data.size());
+	bounds.resize(data.size());
 
 	static vector<CellsRange> cellsRanges;
-	cellsRanges.clear();
-	cellsRanges.reserve(data.size());
+	cellsRanges.resize(data.size());
 
 	static vector<vector<size_t>> grid;
 	grid.resize(rows * columns);
@@ -69,9 +66,9 @@ tuple<vector<Vec2> const &, vector<Bounds> const &, vector<CellsRange> const &, 
 
 	for (size_t i{ 0 }; i < data.size(); ++i)
 	{
-		positions.push_back(calculatePosition(dt, data, i));
-		bounds.push_back(calculateBounds(positions[i], data, i));
-		cellsRanges.push_back(calculateCellsRange(columnSize, rowSize, bounds[i], data, i));
+		positions[i] = calculatePosition(dt, data, i);
+		bounds[i] = calculateBounds(positions[i], data, i);
+		cellsRanges[i] = calculateCellsRange(columnSize, rowSize, bounds[i], data, i);
 
 		CellsRange const & cellsRange{ cellsRanges[i] };
 		for (int c{ cellsRange.colStart }; c >= 0 && c <= cellsRange.colEnd && c < static_cast<int>(columns); ++c)

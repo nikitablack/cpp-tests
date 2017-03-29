@@ -13,7 +13,7 @@ namespace
 		vector<Vec2> v;
 		v.reserve(numVertices);
 
-		float const radius{ randRange(2.0f, 4.0f) };
+		float const radius{ randRange(1.0f, 2.0f) };
 		float const sector{ two_pi / numVertices };
 
 		for (uint32_t i{ 0 }; i < numVertices; ++i)

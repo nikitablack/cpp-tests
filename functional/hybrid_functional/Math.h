@@ -25,8 +25,8 @@ namespace math
 
 	struct Vec2
 	{
-		float /*const*/ x;
-		float /*const*/ y;
+		float x;
+		float y;
 
 		Vec2(float const x = 0.0f, float const y = 0.0f) : x{ x }, y{ y }
 		{}
@@ -75,15 +75,26 @@ namespace math
 		Bounds(Vec2 const tl = {}, Vec2 const br = {}) : topLeft{ tl }, bottomRight{ br }
 		{}
 
-		Vec2 const topLeft;
-		Vec2 const bottomRight;
+		Vec2 topLeft;
+		Vec2 bottomRight;
 	};
 
 	struct Color
 	{
 		Color(float const r = 0.0f, float const g = 0.0f, float const b = 0.0f) : r{ r }, g{ g }, b{ b } {}
-		float const r;
-		float const g;
-		float const b;
+		float r;
+		float g;
+		float b;
+	};
+
+	struct CellsRange
+	{
+		CellsRange(int const cStart = 0, int const rStart = 0, int const cEnd = 0, int const rEnd = 0) : colStart{ cStart }, rowStart{ rStart }, colEnd{ cEnd }, rowEnd{ rEnd }
+		{}
+
+		int colStart;
+		int rowStart;
+		int colEnd;
+		int rowEnd;
 	};
 }

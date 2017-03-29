@@ -35,10 +35,10 @@ string getElapsedTimeStr(chrono::milliseconds const time, size_t const n)
 
 int WINAPI WinMain(HINSTANCE const, HINSTANCE const, LPSTR const, int const)
 {
-	Window const window{ 100.0f, 100.0f, 800.0f, 600.0f, "" };
+	Window const window{ 0.0f, 0.0f, 1366, 768, "" };
 	ShapesRenderer renderer{ 3, window };
 
-	uint32_t const numShapes{ 3000 };
+	uint32_t const numShapes{ 7500 };
 	renderer.createVertexBuffer(static_cast<UINT>((numShapes + 4) * 10 * 3 * sizeof(ShapeShaderData)));
 
 	Vec2 const wSize{ window.getSize() };
@@ -70,11 +70,10 @@ int WINAPI WinMain(HINSTANCE const, HINSTANCE const, LPSTR const, int const)
 
 					auto const simStart{ high_resolution_clock::now() };
 
-					static uint32_t const numPhysicsSteps{ 20 };
+					static uint32_t const numPhysicsSteps{ 20 }; // make 20 steps during one frame - to increase stability and decrease number of rendered objects
 					float const dtStep{ dt / numPhysicsSteps };
 					for (uint32_t s{ 0 }; s < numPhysicsSteps; ++s)
 					{
-						updateSimulation(dtStep, data, wSize.x, wSize.y);
 						auto positionsAndVelocities{ updateSimulation(dtStep, data, wSize.x, wSize.y) };
 						vector<Vec2> const & newPositions{ get<0>(positionsAndVelocities) };
 						vector<Vec2> const & newVelocities{ get<1>(positionsAndVelocities) };

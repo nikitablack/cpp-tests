@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "CellsRange.h"
 #include "Math.h"
 
 struct ShapeShaderData
@@ -29,11 +28,11 @@ struct ShapesData
 
 	void concat(ShapesData const & other)
 	{
-		std::copy(other.vertices.begin(), other.vertices.end(), std::back_inserter(vertices));
-		std::copy(other.positions.begin(), other.positions.end(), std::back_inserter(positions));
-		std::copy(other.velocities.begin(), other.velocities.end(), std::back_inserter(velocities));
-		std::copy(other.colors.begin(), other.colors.end(), std::back_inserter(colors));
-		std::copy(other.massInverses.begin(), other.massInverses.end(), std::back_inserter(massInverses));
+		vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
+		positions.insert(positions.end(), other.positions.begin(), other.positions.end());
+		velocities.insert(velocities.end(), other.velocities.begin(), other.velocities.end());
+		colors.insert(colors.end(), other.colors.begin(), other.colors.end());
+		massInverses.insert(massInverses.end(), other.massInverses.begin(), other.massInverses.end());
 	}
 
 	size_t size() const

@@ -28,6 +28,15 @@ namespace
 		Vec2 const normal;
 	};
 
+	struct VelocityChange
+	{
+		VelocityChange(size_t const index, Vec2 const velocity) : ind{ index }, vel{ velocity }
+		{}
+
+		size_t const ind;
+		Vec2 const vel;
+	};
+
 	bool areBothStatic(ShapesData const & data, size_t const indA, size_t const indB)
 	{
 		return data.massInverses[indA] == 0 && data.massInverses[indB] == 0;
@@ -157,9 +166,9 @@ namespace
 		return tuple<Vec2, Vec2>{n * (j * massInverseA), -(n * (j * massInverseB)) };
 	}
 
-	vector<tuple<size_t, Vec2>> const & solveCollisionsForTheCell(ShapesData const & data, vector<CellsRange> const & cellsRanges, vector<Bounds> const & bounds, vector<size_t> const & shapesInCell, int const row, int const column)
+	vector<VelocityChange> const & solveCollisionsForTheCell(ShapesData const & data, vector<CellsRange> const & cellsRanges, vector<Bounds> const & bounds, vector<size_t> const & shapesInCell, int const row, int const column)
 	{
-		static vector<tuple<size_t, Vec2>> newVelocities;
+		static vector<VelocityChange> newVelocities;
 		newVelocities.clear();
 		newVelocities.reserve(shapesInCell.size());
 
@@ -191,18 +200,17 @@ vector<Vec2> const & solveCollisions(vector<vector<size_t>> const & grid, Shapes
 {
 	static vector<Vec2> newVelocities;
 	newVelocities.clear();
-	newVelocities.resize(data.size());
-	//fill_n(newVelocities.begin(), data.size(), Vec2{});
+	newVelocities.resize(data.size()); // fills vector with Vec2{ 0.0f, 0.0f }
 
 	for (size_t i{ 0 }; i < grid.size(); ++i)
 	{
 		int const currRow{ static_cast<int>(i / columns) };
 		int const currCol{ static_cast<int>(i - currRow * columns) };
 		solveCollisionsForTheCell(data, cellsRanges, bounds, grid[i], currRow, currCol);
-		vector<tuple<size_t, Vec2>> const & tmp { solveCollisionsForTheCell(data, cellsRanges, bounds, grid[i], currRow, currCol) };
+		vector<VelocityChange> const & velocityChanges { solveCollisionsForTheCell(data, cellsRanges, bounds, grid[i], currRow, currCol) };
 
-		for_each(tmp.begin(), tmp.end(), [](tuple<size_t, Vec2> const & indAndVel) {
-			newVelocities[get<0>(indAndVel)] = newVelocities[get<0>(indAndVel)] + get<1>(indAndVel);
+		for_each(velocityChanges.begin(), velocityChanges.end(), [](VelocityChange const & velChange) {
+			newVelocities[velChange.ind] = newVelocities[velChange.ind] + velChange.vel;
 		});
 	}
 

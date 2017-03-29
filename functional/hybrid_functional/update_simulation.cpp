@@ -27,31 +27,15 @@ tuple<vector<Vec2> const &, vector<Vec2> const &> updateSimulation(float const d
 	uint32_t columns;
 	tie(rows, columns) = getNumberOfCells(width, height); // auto [rows, columns] = getNumberOfCells(width, height); - c++17 structured bindings - not supported in vs2017 at the moment of writing
 
-	// step 1 - update calculate current positions
-	auto positionsAndBoundsAndGrid{ calculatePositionsAndBoundsAndCellsRangesAndGrid(dt, width, height, rows, columns, data) };
+	auto positionsAndBoundsAndCellsRangesAndGrid{ calculatePositionsAndBoundsAndCellsRangesAndGrid(dt, width, height, rows, columns, data) };
 
-	vector<Vec2> const & newPositions{ get<0>(positionsAndBoundsAndGrid) };
-	vector<Bounds> const & newBounds{ get<1>(positionsAndBoundsAndGrid) };
-	vector<CellsRange> const & newCellsRanges{ get<2>(positionsAndBoundsAndGrid) };
-	vector<vector<size_t>> const & newGrid{ get<3>(positionsAndBoundsAndGrid) };
+	vector<Vec2> const & newPositions{ get<0>(positionsAndBoundsAndCellsRangesAndGrid) };
+
+	vector<Bounds> const & newBounds{ get<1>(positionsAndBoundsAndCellsRangesAndGrid) };
+	vector<CellsRange> const & newCellsRanges{ get<2>(positionsAndBoundsAndCellsRangesAndGrid) };
+	vector<vector<size_t>> const & newGrid{ get<3>(positionsAndBoundsAndCellsRangesAndGrid) };
 	
 	vector<Vec2> const & newVelocities{ solveCollisions(newGrid, data, newCellsRanges, newBounds, columns) };
-
-	/*static vector<optional<Vec2>> newVelocitiesOpt;
-	newVelocitiesOpt.clear();
-	newVelocitiesOpt.reserve(data.size());
-	copy(data.velocities.begin(), data.velocities.end(), back_inserter(newVelocitiesOpt));
-
-	for_each(velocitiesAfterImpact.begin(), velocitiesAfterImpact.end(), [](VelocityAfterImpact const & vel) {
-		newVelocitiesOpt[vel.ind].emplace(newVelocitiesOpt[vel.ind].value() + vel.velocity);
-	});*/
-
-	/*static vector<Vec2> newVelocities;
-	newVelocities.clear();
-	newVelocities.reserve(data.size());
-	transform(newVelocitiesOpt.begin(), newVelocitiesOpt.end(), back_inserter(newVelocities), [](optional<Vec2> const & opt) {
-		return opt.value();
-	});*/
 
 	return tie(newPositions, newVelocities);
 }
