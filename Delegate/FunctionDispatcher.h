@@ -84,7 +84,7 @@ private:
 	template <typename T, size_t... Idx>
 	std::function<Ret(Args...)> bindImpl(T* obj, Ret(T::*funcPtr)(Args...), std::index_sequence<Idx...>)
 	{
-		return bind(funcPtr, obj, getPlaceholder<Idx>()...);
+		return std::bind(funcPtr, obj, getPlaceholder<Idx>()...);
 	}
 
 	template <size_t N>
