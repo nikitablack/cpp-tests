@@ -13,37 +13,37 @@ public:
 	template<Ret(*funcPtr)(Args...)>
 	bool add()
 	{
-		return add(Delegate<Ret(Args...)>::create<funcPtr>());
+		return add(Delegate<Ret(Args...)>::template create<funcPtr>());
 	}
 
 	template<Ret(*funcPtr)(Args...)>
 	bool remove()
 	{
-		return remove(Delegate<Ret(Args...)>::create<funcPtr>());
+		return remove(Delegate<Ret(Args...)>::template create<funcPtr>());
 	}
 
 	template<typename T, Ret(T::*funcPtr)(Args...)>
 	bool add(std::shared_ptr<T> obj)
 	{
-		return add(Delegate<Ret(Args...)>::create<T, funcPtr>(obj));
+		return add(Delegate<Ret(Args...)>::template create<T, funcPtr>(obj));
 	}
 
 	template<typename T, Ret(T::*funcPtr)(Args...)>
 	bool remove(std::shared_ptr<T> obj)
 	{
-		return remove(Delegate<Ret(Args...)>::create<T, funcPtr>(obj));
+		return remove(Delegate<Ret(Args...)>::template create<T, funcPtr>(obj));
 	}
 
 	template<typename T>
 	bool add(std::shared_ptr<T> t)
 	{
-		return add(Delegate<Ret(Args...)>::create(t));
+		return add(Delegate<Ret(Args...)>::template create(t));
 	}
 
 	template<typename T>
 	bool remove(std::shared_ptr<T> t)
 	{
-		return remove(Delegate<Ret(Args...)>::create(t));
+		return remove(Delegate<Ret(Args...)>::template create(t));
 	}
 
 	void operator()(Args... args)
